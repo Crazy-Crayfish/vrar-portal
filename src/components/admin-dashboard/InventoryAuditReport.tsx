@@ -127,9 +127,17 @@ export default function InventoryAuditReport() {
       confirmed: 3,
       checked_out: 4,
     }
+    // Then grouped by hardware type, so every TENS 3000 sits together rather
+    // than scattered by serial. Unrecognised barcodes have no name and go last.
     return entries
       .filter((entry) => matchesFilter(entry, filter))
-      .sort((a, b) => rank[a.status] - rank[b.status] || a.serialNumber.localeCompare(b.serialNumber))
+      .sort(
+        (a, b) =>
+          rank[a.status] - rank[b.status] ||
+          (a.equipmentName === null ? 1 : 0) - (b.equipmentName === null ? 1 : 0) ||
+          (a.equipmentName ?? '').localeCompare(b.equipmentName ?? '') ||
+          a.serialNumber.localeCompare(b.serialNumber),
+      )
   }, [audit, filter])
 
   function handleLogOut() {
