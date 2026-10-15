@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 // our own origin rather than the package's default jsDelivr URL keeps the
 // scanner working behind a strict CSP or a blocked CDN.
 import zxingWasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url'
+import { hapticTick } from '../lib/haptics'
+
+// Only Code 128, which is what our labels print (see lib/code128.ts). The
+// same label also carries two QR codes linking to the item docs and the
+// checkout policy; with QR enabled, whichever code the detector saw first
+// won, so a URL was read as the serial. Manufacturer EAN/Code 39 barcodes on
+// the hardware itself are never our serial either.
+const SERIAL_FORMATS = ['code_128']
 
 /**
  * Opens the device camera and watches for a barcode.
@@ -77,16 +85,18 @@ export function useBarcodeScanner(
           await videoRef.current.play()
         }
 
-        const detector = new BarcodeDetector({
-          formats: ['code_128', 'code_39', 'ean_13', 'qr_code'],
-        })
+        const detector = new BarcodeDetector({ formats: SERIAL_FORMATS })
 
         const scan = async () => {
           if (cancelled || !videoRef.current) return
           try {
             const barcodes = await detector.detect(videoRef.current)
-            if (barcodes.length > 0) {
-              onDetectedRef.current(barcodes[0].rawValue)
+            // Filtered again in case a detector reports formats it wasn't
+            // asked for.
+            const serial = barcodes.find((b) => SERIAL_FORMATS.includes(b.format))
+            if (serial) {
+              hapticTick()
+              onDetectedRef.current(serial.rawValue)
               return // stop the loop; the caller will move to the next step
             }
           } catch {
