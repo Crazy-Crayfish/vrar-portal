@@ -7,10 +7,8 @@ import { CalendarIcon } from './icons'
 import { fetchEquipment, fetchEquipmentByIds, peekEquipmentRows } from '../../lib/inventory'
 import type { Equipment, UserProfile } from '../../types'
 import { Skeleton, SkeletonScreen } from '../skeleton/Skeleton'
+import { ORG_NAME, USAGE_POLICY } from '../../lib/org'
 import styles from './CheckoutReturnDate.module.css'
-
-// The Synaptech Hardware Checkout & Usage Policy Google Doc.
-const POLICY_URL = 'https://docs.google.com/document/d/11RSFuvvg1F4aM9V0znWw7wFn_MZMx95T7EdlblAyPfc/edit?tab=t.0'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -266,9 +264,13 @@ export default function CheckoutReturnDate() {
 
         <p className={styles.policyText}>
           Be sure to consult the{' '}
-          <a href={POLICY_URL} target="_blank" rel="noopener noreferrer" className={styles.policyLink}>
-            Synaptech Hardware Checkout &amp; Usage Policy
-          </a>{' '}
+          {USAGE_POLICY.url ? (
+            <a href={USAGE_POLICY.url} target="_blank" rel="noopener noreferrer" className={styles.policyLink}>
+              {ORG_NAME} {USAGE_POLICY.title}
+            </a>
+          ) : (
+            `${ORG_NAME} ${USAGE_POLICY.title}`
+          )}{' '}
           for more information on the return date and loan period
         </p>
 

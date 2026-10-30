@@ -145,7 +145,7 @@ async function sendReminderBatch(
 
 async function sendOverdueAdminAlerts(admin: Admin, items: LoanItemRow[]): Promise<number> {
   const contextByItem = await loadItemContexts(admin, items);
-  // One email per item, to Synaptech's own address — same as every other
+  // One email per item, to the organisation's own inbox — same as every other
   // admin-facing template (see dispatchToAdmins in send-email/index.ts) —
   // with individually opted-in admins CC'd on top, rather than every admin
   // getting their own personal copy.
@@ -166,8 +166,8 @@ async function sendOverdueAdminAlerts(admin: Admin, items: LoanItemRow[]): Promi
       });
       sent += 1;
     }
-    // Marked as notified either way — an empty archive address (someone
-    // set EMAIL_ARCHIVE_CC to "" to disable it) shouldn't make this retry
+    // Marked as notified either way — an empty archive address (unset, or
+    // EMAIL_ARCHIVE_CC set to "" to disable it) shouldn't make this retry
     // the same overdue item every day forever.
     await admin
       .from("loan_request_items")

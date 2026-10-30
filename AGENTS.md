@@ -2,6 +2,74 @@
 
 Working notes for anyone (human or AI agent) changing this codebase: how it is laid out, how it is deployed, how the database and background jobs behave, and the reasoning behind decisions that are not obvious from the code. For a short overview of the project, see [README.md](README.md).
 
+## This is a fork
+
+This repository is a fork of the Synaptech Hardware Management System (HMS), being turned into the hardware checkout site for the **VR/AR committee**. That is a separate organisation with no connection to Synaptech. Most of the infrastructure carries over unchanged, including check-out and return. What changes is everything tied to Synaptech: its name and branding, its URLs (domain, Google Docs, Discord, QR codes), its email addresses and its Supabase project.
+
+- **Supabase:** the new site will run on a brand-new Supabase project, on a different account, built from the same migrations in this repo. Keep the schema as it is for now. Rebuilding it means pointing the app at the new project, not redesigning the database.
+- **Text still to be updated:** a lot of this file and the README still describes Synaptech: its domain, archive address, policies and logo. Read those mentions as how the original project worked, not as settings for the fork. Update each one as the matching code changes.
+- **Nothing ties back to Synaptech:** no URL, email address, Storage object or project ref belonging to Synaptech should remain in the fork. When you see one, replace it or move it into configuration. Don't keep it as a fallback.
+- **Organisation details live in [`src/lib/org.ts`](src/lib/org.ts):** the app name, the organisation's name, the help & support and documentation links, the policy documents and the archive inbox. A link that's still `null` hasn't been provided yet; the screens leave it out (or show the document's title as plain text) until it is. The Edge Functions can't import that file, so their counterparts are secrets with **no default**: `EMAIL_FROM_ADDRESS` (required; a send without it fails and is logged as failed), `EMAIL_ARCHIVE_CC` (unset is logged as an error on every send, and admin-facing emails go nowhere) and `EMAIL_FOOTER_IMAGE_URL` (unset sends no footer). `EMAIL_ARCHIVE_ADDRESS` in `org.ts` must match `EMAIL_ARCHIVE_CC`, since the template editor shows it. `index.html`'s `<title>` repeats `APP_NAME` for the moment before React loads.
+- **The committee is UW-affiliated,** so the `@uw.edu` sign-in check, the `uw_email`/`student_id` fields and the `America/Los_Angeles` send time zone all stay.
+- **Licence:** the README's licence is Synaptech's, and it requires Synaptech RSO leadership's written permission for any use outside Synaptech. Settle that with them before the fork is deployed. Don't rewrite the licence text on your own initiative.
+
+### Fork scope
+
+Agreed with the project owner on 2026-10-30. Work in this order: first point the app at the new Supabase project, rebrand it and remove labels; then the equipment-side changes; then room reservations. The schema of the original migrations stays as it is. Every new table or column comes as a **new** migration file, and none of the existing migrations are edited.
+
+**Remove: label making.** Units carry UW-issued barcodes, so the app no longer prints its own labels. That means removing:
+- the add-item labels step, the replacement-label page and the get-labels browse/product pages, with their routes and `ROUTE_TITLES` entries;
+- `components/admin-dashboard/labels/`, `src/lib/labelPdf.ts`, `src/lib/code128.ts` and the QR images;
+- the label entry points on the admin home and in `EquipmentUnitsTable`.
+
+Drop `html2canvas` only once nothing imports it.
+
+**Change: UW barcodes instead of `SYN-` serials.**
+- `normalizeSerialNumber` must stop adding the `SYN-` prefix and only trim and uppercase. Remove the `SERIAL_PREFIX` checks in the checkout, return, audit and serial-entry screens as well.
+- Admins type or scan the UW tag number when adding a unit, instead of `generateSerialNumbers` making one up.
+- `useBarcodeScanner` reads only `code_128` today. Confirm which symbology UW property tags use, and add it to `SERIAL_FORMATS`.
+
+**Change: the equipment contract gets new content, and the signing system stays as it is.**
+- The text lives in `src/lib/loanAgreementContent.ts`, which both `AgreementPreview` and `loanAgreementPdf.ts` read.
+- Sections 1, 2, 9 and 10 are laid out in code in both files, so keep them in step.
+- `restampAgreementSerial` finds the serial in section 2 of the PDF by its position (`locateSerialNumberCell`). If section 2 changes shape, that has to change with it.
+- The Certificate of Approval page in `loanAgreementApproval.ts` carries Synaptech wording too.
+
+**Change: bylaws instead of Synaptech's terms.**
+- The policy links in `ProfileSetupPage.tsx` and `CheckoutReturnDate.tsx` point at the committee's bylaws and terms.
+- Agreeing to them is still **not stored**. That was a deliberate choice.
+
+**Change: the training link reuses `documentation_url`.**
+- Each item's existing documentation link becomes its training link: relabel it as training in the add/edit item pages, the catalog item page, the checkout confirm step and the member's loan detail.
+- Add a separate `training_url` only if the committee keeps documentation and training material apart.
+
+**Add: training confirmation, stored the same way as the contract signature.**
+- Checkout gets a tick-box confirming the member has read the training material. It must be ticked to continue, like the contract.
+- It is recorded on `loan_request_items` (a new column, e.g. `training_confirmed_at`), written in the same insert in `submitLoanRequest` that stores `signature_name`/`signature_date`.
+- The loan detail screen shows it next to the signed agreement. For items submitted before the column existed, it shows "Not recorded".
+- The database records the confirmation; it doesn't enforce it, which is also how the contract works.
+
+**Add: AirTag recorded at hand-off.**
+- During the hand-off, the admin records which AirTag went with the hardware. It's stored on `loan_request_items` (a new column) and shown on the loan detail screen.
+- A return could prompt the admin to check the AirTag came back.
+- There is no AirTag API, so tracking happens in Find My. The app only records which tag went where.
+
+**Add: suggested projects.** A new field on `equipment`, shown in the catalog.
+
+**Add: room reservations.** Members reserve the committee's room as a whole. A room reservation does **not** include equipment for now (the project owner may revisit this).
+- **Database:** a new reservations table with RLS policies and grants, a database-side guard against overlapping bookings (in the spirit of [One unit, one borrower](#one-unit-one-borrower)), and audit triggers.
+- **Member:** chooses a time (adapt `AvailabilityGrid`), signs the **room contract**, and submits.
+- **Admin:** approves, denies or cancels, with emails sent through the existing template system.
+- **NetID:** taken from the part of `uw_email` before the @. No separate UW single sign-on (SSO).
+
+**Add: the room contract.** This is a second contract alongside the equipment one.
+- Make the agreement content and the code-laid-out sections depend on the kind of contract, rather than copying the components. The room version has a date-and-time block instead of the item/serial section.
+- It's stored like the equipment contract: one PDF per reservation in the private bucket, with its path and the signer's name and date on the reservation row.
+
+**Keep:** optional and required add-ons, sign-in through the UW Google account, and the reminder function. `send-scheduled-reminders` still needs to be scheduled. See [Automated emails](#automated-emails), setup step 6.
+
+**Rebrand:** the name, the logo (`BrandWordmark`, the welcome page, the agreement header, the favicon), the welcome copy and hardware carousel, the actual link values and archive inbox in `src/lib/org.ts` (the code side is done: the Worker and package are `vrar-portal`, and nothing falls back to Synaptech's links, inbox, sender or footer), a new email footer image at the same 661×121 proportions `signature.ts` assumes, the email-template wording, `documentation/` with its screenshots, and test fixtures.
+
 ## Conventions
 
 - **No server of our own.** The app is a Vite + React SPA that talks straight to Supabase (PostgREST, Auth, Storage) from the browser. Anything needing a secret runs in a Supabase Edge Function or a Postgres trigger, never in the client.
@@ -131,7 +199,7 @@ The `equipment`/`equipment_units` columns and the `equipment_addons` table, RLS 
 
 ## Automated emails
 
-Every automated email is CC'd to an archive address (`synaptechuw@gmail.com` by default) so the club keeps a copy outside the app. Override it per environment with the `EMAIL_ARCHIVE_CC` secret, or set that secret to an empty string to switch the archive copy off. The CC is skipped when the archive address is already the recipient, so it never double-delivers.
+Every automated email is CC'd to an archive address so the club keeps a copy outside the app. It is the `EMAIL_ARCHIVE_CC` secret, with no default: unset is logged as an error on every send. Set that secret to an empty string to switch the archive copy off on purpose. The same address is the direct recipient of the admin-facing templates, and the template editor displays it from `EMAIL_ARCHIVE_ADDRESS` in `src/lib/org.ts`, so keep the two matching. The CC is skipped when the archive address is already the recipient, so it never double-delivers.
 
 The admin "Sent email log" screen (`/adminHome/emails/log`) lists every send — status, template, recipient, CC and timestamp — and opens each row to show the subject, the rendered body exactly as sent, and the provider's error for failures. Failures are logged as well as successes, which is usually what you need to debug one.
 
@@ -153,11 +221,15 @@ This app has no server of its own — it's Vite + React talking directly to Supa
    ```bash
    supabase secrets set RESEND_API_KEY=re_...
    ```
-   Without a verified sending domain, Resend's shared `onboarding@resend.dev` sender only delivers to the Resend account's own email — fine for testing, not for real members. Once you verify a domain, also set `EMAIL_FROM_ADDRESS` (e.g. `Synaptech Hardware <hardware@your-domain.org>`).
-
-   The archive CC defaults to `synaptechuw@gmail.com` with no configuration. To change or disable it:
+   Also set the sender, which has no default (a send without it fails and lands in the email log as failed). Before a domain is verified, Resend's shared `onboarding@resend.dev` sender only delivers to the Resend account's own email — fine for testing, not for real members:
    ```bash
-   supabase secrets set EMAIL_ARCHIVE_CC=someone-else@example.org   # or "" to disable
+   supabase secrets set EMAIL_FROM_ADDRESS="VR/AR Hardware <onboarding@resend.dev>"   # a verified domain's address once you have one
+   ```
+
+   Set the archive inbox, matching `EMAIL_ARCHIVE_ADDRESS` in `src/lib/org.ts`, and optionally the footer image (a public URL, e.g. in a public Storage bucket of this project; without it emails have no footer):
+   ```bash
+   supabase secrets set EMAIL_ARCHIVE_CC=committee-inbox@example.org   # or "" to disable
+   supabase secrets set EMAIL_FOOTER_IMAGE_URL=https://<project-ref>.supabase.co/storage/v1/object/public/email-assets/email-footer.png
    ```
    Note the sandbox restriction applies to the CC too: until a domain is verified, Resend will reject a send whose CC isn't the Resend account's own address.
 3. Deploy `send-email` with JWT verification off (see above for why):

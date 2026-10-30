@@ -21,12 +21,14 @@ export async function sendViaResend({ to, subject, text, html, cc, attachments }
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) throw new Error("RESEND_API_KEY is not configured for this function");
 
-  // Resend's shared onboarding@resend.dev sender works without a verified
-  // domain, but (per Resend's own sandbox rules) can only deliver to the
-  // Resend account's own email until a sending domain is verified. Set
-  // EMAIL_FROM_ADDRESS once a real domain is verified — see this repo's
-  // README "Automated emails" section.
-  const from = Deno.env.get("EMAIL_FROM_ADDRESS") ?? "Synaptech Hardware <onboarding@resend.dev>";
+  // No default sender: the name on it would be some organisation's, and
+  // guessing wrong is worse than failing (the failure lands in email_log).
+  // Before a sending domain is verified, Resend's shared sender works for
+  // testing, e.g. "VR/AR Hardware <onboarding@resend.dev>", but per Resend's
+  // sandbox rules it only delivers to the Resend account's own email. See
+  // AGENTS.md, "Automated emails".
+  const from = Deno.env.get("EMAIL_FROM_ADDRESS")?.trim();
+  if (!from) throw new Error("EMAIL_FROM_ADDRESS is not configured for this function");
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",

@@ -15,6 +15,11 @@ import EditEmailTemplate from '../components/admin-dashboard/EditEmailTemplate'
 
 vi.mock('../context/AuthContext', () => ({ useAuth: vi.fn() }))
 
+vi.mock('../lib/org', async () => {
+  const actual = await vi.importActual<typeof import('../lib/org')>('../lib/org')
+  return { ...actual, ORG_NAME: 'Test Club', EMAIL_ARCHIVE_ADDRESS: 'archive@example.org' }
+})
+
 vi.mock('../lib/emailTemplates', async () => {
   const actual = await vi.importActual<typeof import('../lib/emailTemplates')>('../lib/emailTemplates')
   return {
@@ -252,7 +257,7 @@ describe('EditEmailTemplate — Recipients section', () => {
     expect(screen.queryByRole('switch', { name: /direct recipient/i })).not.toBeInTheDocument()
   })
 
-  it('shows Synaptech’s name and address as the fixed Recipient for a broadcast admin template, and hides it from the CC list below', async () => {
+  it('shows the organisation’s name and inbox as the fixed Recipient for a broadcast admin template, and hides it from the CC list below', async () => {
     mockTemplate('hardware-item-added')
     vi.mocked(fetchTemplateRecipients).mockResolvedValue([
       { id: 'admin-1', name: 'Ada Admin', email: 'admin@uw.edu', ccEnabled: false },
@@ -267,14 +272,13 @@ describe('EditEmailTemplate — Recipients section', () => {
     await waitFor(() => {
       expect(screen.getByText('Ada Admin')).toBeInTheDocument()
     })
-    // The header also says "Synaptech" (the app's own branding), so this
-    // pins down the specific name+email pair in the Recipient row rather
-    // than counting every "Synaptech" text node on the page.
-    const recipientEmail = screen.getByText('synaptechuw@gmail.com')
-    expect(recipientEmail.previousElementSibling).toHaveTextContent('Synaptech')
-    // The CC list still shows real admins — only the redundant Synaptech
+    // Pins down the specific name+email pair in the Recipient row rather
+    // than counting every text node with the organisation's name.
+    const recipientEmail = screen.getByText('archive@example.org')
+    expect(recipientEmail.previousElementSibling).toHaveTextContent('Test Club')
+    // The CC list still shows real admins — only the redundant organisation
     // row (it's already the fixed recipient above) is suppressed.
-    expect(screen.queryByRole('switch', { name: /synaptech/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: /test club/i })).not.toBeInTheDocument()
   })
 
   it('lists every current admin with a toggleable CC switch, off by default', async () => {
@@ -319,7 +323,7 @@ describe('EditEmailTemplate — Recipients section', () => {
     })
   })
 
-  it('shows a Synaptech CC row for a template whose recipient is a member, and lets it be toggled', async () => {
+  it('shows the organisation’s CC row for a template whose recipient is a member, and lets it be toggled', async () => {
     mockTemplate('checkout-request-confirmation', true)
     vi.mocked(fetchTemplateRecipients).mockResolvedValue([])
     vi.mocked(setEmailTemplateArchiveCc).mockResolvedValue({
@@ -335,21 +339,21 @@ describe('EditEmailTemplate — Recipients section', () => {
 
     renderEditor()
 
-    const synaptechSwitch = await screen.findByRole('switch', {
-      name: /remove synaptech.?s archive address as a cc/i,
+    const archiveSwitch = await screen.findByRole('switch', {
+      name: /remove test club.?s archive address as a cc/i,
     })
-    expect(screen.getByText('synaptechuw@gmail.com')).toBeInTheDocument()
-    expect(synaptechSwitch).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByText('archive@example.org')).toBeInTheDocument()
+    expect(archiveSwitch).toHaveAttribute('aria-checked', 'true')
 
     const user = userEvent.setup()
-    await user.click(synaptechSwitch)
+    await user.click(archiveSwitch)
 
     await waitFor(() => {
       expect(setEmailTemplateArchiveCc).toHaveBeenCalledWith('checkout-request-confirmation', false, 'admin-1')
     })
     await waitFor(() => {
       expect(
-        screen.getByRole('switch', { name: /add synaptech.?s archive address as a cc/i }),
+        screen.getByRole('switch', { name: /add test club.?s archive address as a cc/i }),
       ).toHaveAttribute('aria-checked', 'false')
     })
   })

@@ -7,12 +7,9 @@ import { ArrowLeftIcon, ArrowUpLeftFilled, ChevronRightFilled, DocumentationIcon
 import { availableQuantity, fetchEquipment, fetchEquipmentAvailability, peekEquipmentCatalog } from '../../lib/inventory'
 import type { Equipment, UserProfile } from '../../types'
 import { Skeleton, SkeletonScreen } from '../skeleton/Skeleton'
+import { HELP_AND_SUPPORT_URL } from '../../lib/org'
 import styles from './BrowseInventoryItem.module.css'
 import { useStartCheckout } from './useStartCheckout'
-
-// Help & support always points at the club's Discord — same link used on
-// the checkout confirm screen (CheckoutConfirmHardware.tsx).
-const HELP_AND_SUPPORT_URL = 'https://discord.gg/zNKCN5233Y'
 
 function isOutOfStock(item: Equipment): boolean {
   return item.quantity_total <= 0
@@ -155,20 +152,22 @@ export default function BrowseInventoryItem() {
                   <ChevronRightFilled size={9} color="#474747" />
                 </button>
               )}
-              <a
-                className={`${styles.linkRow} ${styles.linkRowBottom}`}
-                href={HELP_AND_SUPPORT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className={styles.linkRowLeft}>
-                  <span className={styles.linkRowIcon}>
-                    <HelpIconFilled size={22} />
+              {HELP_AND_SUPPORT_URL && (
+                <a
+                  className={`${styles.linkRow} ${styles.linkRowBottom}`}
+                  href={HELP_AND_SUPPORT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.linkRowLeft}>
+                    <span className={styles.linkRowIcon}>
+                      <HelpIconFilled size={22} />
+                    </span>
+                    Get help &amp; support
                   </span>
-                  Get help &amp; support
-                </span>
-                <ChevronRightFilled size={9} color="#474747" />
-              </a>
+                  <ChevronRightFilled size={9} color="#474747" />
+                </a>
+              )}
             </div>
           </div>
         )}
