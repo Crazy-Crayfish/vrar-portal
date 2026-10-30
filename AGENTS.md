@@ -34,6 +34,14 @@ Work through the phases in order. Tick an item when it's merged, and note the PR
 
 **New Supabase project and accounts.** The existing sections below describe each step in detail; this is the fork's order of work.
 - [ ] Create the Supabase project.
+- [ ] **Write the missing `profiles` migration first. The migrations can't build a fresh project without it.** No migration creates `profiles`, which predates this repo's migration history:
+  - its columns, including `role`;
+  - the owner's read/write RLS policies and its table grants;
+  - the trigger that forces new rows to `role = 'member'`.
+
+  Yet `20260817030000_loan_requests.sql` and later migrations reference it, so running them on an empty project fails there. Take the definition from Synaptech's live database, for example with `supabase db dump --schema public` or the table's definition in the dashboard. Write it as an idempotent migration whose version sorts before `20260817000000`. Make `discord` nullable or leave it out (see "Remove Discord" in Phase 2).
+
+  While in that dump, diff the rest of the live schema against the migrations, in case anything else was only ever created by hand.
 - [ ] Run every migration in `supabase/migrations/` in filename order, in the SQL editor. Don't use `supabase db push` (see [App audit log](#app-audit-log)). The migrations also create the `equipment-images`, `loan-agreements` and `email-assets` Storage buckets.
 - [ ] Turn on `pg_cron` under **Database → Extensions**, then re-run `20260921000000_audit_log.sql` to schedule the audit-log pruning (see [Retention](#retention)).
 - [ ] Create a Google OAuth client in Google Cloud. Its callback is the new project's `/auth/v1/callback`. Enable the Google provider in Supabase Auth with that client.
@@ -98,6 +106,17 @@ Work through the phases in order. Tick an item when it's merged, and note the PR
 - [ ] Schedule `send-scheduled-reminders` daily (see [One-time setup](#one-time-setup), step 6). The function already sends 7 days before the due date, on the due date, and when overdue.
 - [ ] Keep: optional and required add-ons, as they are.
 
+**New equipment categories** (*needs input: the list*). The current `category` values (recording, modulation, tools, peripherals, computing, virtual_reality) come from Synaptech's neurotech catalog. Expect far fewer categories, mostly VR/AR.
+- [ ] A new migration that drops `equipment_category_check` (from `20260817010000_equipment_category.sql`) and adds it back with the new values. If it runs after items have been added, it also has to move existing rows onto the new values first.
+- [ ] Update `EquipmentCategory` in `src/types.ts` and `CATEGORY_OPTIONS` in `src/lib/equipmentCategories.ts`. That covers the add/edit item pages, the catalog's filter chips (`InventoryFilterChips`) and grouping (`useInventoryCatalog`). Consumables stay a separate `product_type` with their own filter chip.
+- [ ] Update the tests that use the old category values.
+
+**Remove Discord.** The committee doesn't use it.
+- [ ] Remove the required "Discord username" field from profile setup (`ProfileSetupPage.tsx`, its form state and validation) and from `ProfileSetupPage.test.tsx`.
+- [ ] Remove the Discord rows from the admin screens: `MemberDetail.tsx` (with its copy button), `LoanDetail.tsx` (`memberDiscord`, selected in `loanRequests.ts`), and `ViewMembers.tsx` (shown in the list and searched).
+- [ ] About 30 screens pass `profile.discord` to the header as `handle`, and `ProfileModal` shows it under the member's name. Replace it with something else (the NetID from `uw_email` is the natural choice) or drop the line.
+- [ ] Drop `discord` from the `Profile` type (`src/types/index.ts`) and from `AuditLog.tsx`'s field labels. The column itself can stay unused, as long as it allows null (see the `profiles` item in Phase 1). The audit trigger's field list in `20260921000000_audit_log.sql` can keep naming it, since it simply never changes.
+
 ### Phase 3: room reservations
 
 Members reserve the committee's room as a whole. A room reservation does **not** include equipment for now; see [Open decisions](#open-decisions).
@@ -115,10 +134,11 @@ Members reserve the committee's room as a whole. A room reservation does **not**
 
 ### Open decisions
 
+Not yet known, but expected soon. Each one blocks only the items marked *needs input* that depend on it.
+
 - **Can a room reservation include equipment?** Assumed no for now. If yes, a reservation would need to hold units the way a loan request does.
 - **Which barcode format do UW property tags use?** It blocks the `SERIAL_FORMATS` change.
-- **Should Discord stay required at profile setup?** It's required today, and admins see it on member and loan screens.
-- **Should the equipment categories change?** The current `category` values (recording, modulation, tools, peripherals, computing, virtual_reality) come from Synaptech's neurotech catalog. They're a database check constraint, so changing them is a new migration plus `src/lib/equipmentCategories.ts`.
+- **The new equipment categories.** Expect far fewer, mostly VR/AR. It blocks the categories item in Phase 2.
 - **Wording and assets:** the equipment contract, the room contract, the bylaws and terms, the logo and the welcome copy.
 
 ## Conventions
