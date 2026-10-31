@@ -16,17 +16,11 @@ export interface SendTemplatedEmailInput {
   extraCc?: string[];
 }
 
-// Every automated email is copied to this address so the club keeps its own
-// archive of what went out, independent of the in-app log. Override per
-// environment with the EMAIL_ARCHIVE_CC secret; set it to an empty string
-// to turn the archive copy off entirely.
-const DEFAULT_ARCHIVE_CC = "synaptechuw@gmail.com";
-
 // `sent_date`/`sent_time` — available on every template (see
 // 20260918040000_email_universal_date_time_fields.sql) since, unlike every
 // other field, they aren't pulled from a row: they're just "when did this
 // particular email go out", computed fresh right here. Pacific time, since
-// that's where Synaptech/UW actually is — Deno's default runtime clock is
+// that's where UW actually is — Deno's default runtime clock is
 // UTC, which would otherwise show every recipient a time that's off by
 // several hours from their own.
 const SEND_TIME_ZONE = "America/Los_Angeles";
@@ -49,15 +43,28 @@ export function sentDateTimeFields(now: Date = new Date()): { sent_date: string;
   };
 }
 
-// The literal address, honoring the same EMAIL_ARCHIVE_CC override every
-// other use of "the archive address" respects. This is also the "to" that
-// an admin-broadcast template's dispatch resolves to now that it's
-// "Synaptech", not each admin's own inbox — see dispatchToAdmins in
-// send-email/index.ts and sendOverdueAdminAlerts in send-scheduled-
-// reminders/index.ts. Exported for the unit test alongside this file.
+// The organisation's own inbox, from the EMAIL_ARCHIVE_CC secret. Every
+// automated email is copied to it so the club keeps its own archive of what
+// went out, independent of the in-app log, and it is also the "to" that an
+// admin-broadcast template's dispatch resolves to, rather than each admin's
+// own inbox — see dispatchToAdmins in send-email/index.ts and
+// sendOverdueAdminAlerts in send-scheduled-reminders/index.ts.
+//
+// There is deliberately no default address: this code came from another
+// organisation's project, and a fallback would quietly copy every email to
+// them. Unset is reported as an error on every send; set it to an empty
+// string to turn the archive copy (and the admin-facing emails) off on
+// purpose. The frontend shows the same address from EMAIL_ARCHIVE_ADDRESS in
+// src/lib/org.ts, so keep the two matching.
 export function resolveArchiveAddress(): string {
   const configured = Deno.env.get("EMAIL_ARCHIVE_CC");
-  return (configured ?? DEFAULT_ARCHIVE_CC).trim();
+  if (configured === undefined) {
+    console.error(
+      "EMAIL_ARCHIVE_CC is not configured: no archive copy is sent and admin-facing emails have no recipient",
+    );
+    return "";
+  }
+  return configured.trim();
 }
 
 // Exported for the unit test alongside this file.
@@ -87,7 +94,7 @@ function dedupeCaseInsensitive(addresses: string[]): string[] {
 }
 
 // Combines the fixed archive CC (unless turned off for this template via
-// the "Synaptech" row in the admin editor's Recipients section) with the
+// the organisation's row in the admin editor's Recipients section) with the
 // per-template admin CCs from extraCc, dropping the recipient itself (the
 // To line) and any duplicates between the two sources.
 function ccFor(recipient: string, extraCc: string[] | undefined, archiveCcEnabled: boolean): string[] | undefined {

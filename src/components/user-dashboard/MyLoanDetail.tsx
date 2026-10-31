@@ -27,11 +27,8 @@ import { fetchSignedAgreementUrl } from '../../lib/loanRequests'
 import { cancelReturnRequest, type AvailabilityTarget } from '../../lib/availability'
 import type { UserProfile } from '../../types'
 import { Skeleton, SkeletonScreen } from '../skeleton/Skeleton'
+import { HELP_AND_SUPPORT_URL } from '../../lib/org'
 import styles from './MyLoanDetail.module.css'
-
-// Help & support always points at the club's Discord — the same link the
-// browse and checkout screens use.
-const HELP_AND_SUPPORT_URL = 'https://discord.gg/zNKCN5233Y'
 
 /** "June 23rd, 2026" — the long form the wireframes use under the name. */
 function formatLongDate(iso: string, isDateOnly = false): string {
@@ -390,20 +387,22 @@ export default function MyLoanDetail() {
                 </button>
               )}
 
-              <a
-                className={`${styles.linkRow} ${styles.linkRowBottom}`}
-                href={HELP_AND_SUPPORT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className={styles.linkRowLeft}>
-                  <span className={styles.linkRowIcon}>
-                    <HelpIconFilled size={22} />
+              {HELP_AND_SUPPORT_URL && (
+                <a
+                  className={`${styles.linkRow} ${styles.linkRowBottom}`}
+                  href={HELP_AND_SUPPORT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.linkRowLeft}>
+                    <span className={styles.linkRowIcon}>
+                      <HelpIconFilled size={22} />
+                    </span>
+                    Get help &amp; support
                   </span>
-                  Get help &amp; support
-                </span>
-                <ChevronRightFilled size={9} color="#474747" />
-              </a>
+                  <ChevronRightFilled size={9} color="#474747" />
+                </a>
+              )}
             </div>
           </>
         )}

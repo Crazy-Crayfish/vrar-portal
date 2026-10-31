@@ -1,3 +1,5 @@
+> **Fork in progress.** This repository is being turned into the hardware checkout and room reservation site for the UW **VR/AR committee**, a separate organisation from Synaptech. The description, screenshots and usage guides below still describe the original Synaptech HMS and will be updated as the fork's features land. For the agreed scope, see [AGENTS.md → This is a fork](AGENTS.md#this-is-a-fork).
+
 <img width="25%" src="public/synaptech-logo.png"></img>
 
 # Hardware Management System (HMS)
@@ -47,8 +49,8 @@ One of Synaptech's missions at UW is to increase access to neurotechnology educa
 
 #### Prerequisites
 - Node.js installed
-- Access to the Synaptech HMS Supabase project
-- Access to the Synaptech Resend account
+- Access to the VR/AR committee's Supabase project (a new project, built from the migrations in `supabase/migrations/`)
+- Access to the VR/AR committee's Resend account
 
 #### 1. Install packages
 ```bash
@@ -64,7 +66,7 @@ VITE_SUPABASE_ANON_KEY=
 Run the following commands with the corresponding API key value.
 ```
 npx supabase secrets set RESEND_API_KEY=
-npx supabase secrets set EMAIL_FROM_ADDRESS=hardware@mail.synaptechuw.org
+npx supabase secrets set EMAIL_FROM_ADDRESS="<sender name> <address@your-verified-domain>"
 ```
 #### 4. Build & run
 ```bash

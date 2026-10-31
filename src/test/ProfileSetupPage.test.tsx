@@ -7,6 +7,18 @@ import { supabase } from '../lib/supabase'
 
 vi.mock('../context/AuthContext', () => ({ useAuth: vi.fn() }))
 
+// A getter, so a test can take the policy's link away and see plain text.
+const org = vi.hoisted(() => ({ privacyUrl: 'https://policies.example.org/privacy' as string | null }))
+vi.mock('../lib/org', async () => {
+  const actual = await vi.importActual<typeof import('../lib/org')>('../lib/org')
+  return {
+    ...actual,
+    get PRIVACY_POLICY() {
+      return { ...actual.PRIVACY_POLICY, url: org.privacyUrl }
+    },
+  }
+})
+
 vi.mock('../lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
@@ -116,8 +128,19 @@ describe('ProfileSetupPage — privacy policy consent', () => {
   it('links the privacy policy, opening in a new tab', () => {
     render(<ProfileSetupPage />)
     const link = screen.getByRole('link', { name: /privacy policy/i })
-    expect(link).toHaveAttribute('href', expect.stringContaining('docs.google.com'))
+    expect(link).toHaveAttribute('href', 'https://policies.example.org/privacy')
     expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('names the privacy policy without a link until one is configured', () => {
+    org.privacyUrl = null
+    try {
+      render(<ProfileSetupPage />)
+      expect(screen.queryByRole('link', { name: /privacy policy/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: /agree to the vr\/ar committee privacy policy/i })).toBeInTheDocument()
+    } finally {
+      org.privacyUrl = 'https://policies.example.org/privacy'
+    }
   })
 
   it('will not create the profile until the policy is agreed to', async () => {
@@ -127,7 +150,7 @@ describe('ProfileSetupPage — privacy policy consent', () => {
 
     await user.click(screen.getByRole('button', { name: /continue/i }))
 
-    const checkbox = screen.getByRole('checkbox', { name: /agree to the synaptech hms privacy policy/i })
+    const checkbox = screen.getByRole('checkbox', { name: /agree to the vr\/ar committee privacy policy/i })
     expect(checkbox).toHaveAttribute('aria-invalid', 'true')
     expect(checkbox).toHaveAccessibleDescription('You must agree to the Privacy Policy to continue.')
     await vi.waitFor(() => expect(checkbox).toHaveFocus())

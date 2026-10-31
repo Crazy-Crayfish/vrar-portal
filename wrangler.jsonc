@@ -4,7 +4,7 @@
   // import now. Committing this config rather than letting the build generate
   // one keeps every deploy identical and stops the setup prompt running in a
   // non-interactive build.
-  "name": "synaptech-hms",
+  "name": "vrar-portal",
   "compatibility_date": "2026-09-18",
   "assets": {
     "directory": "./dist",

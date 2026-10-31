@@ -16,11 +16,8 @@ import { checkoutStartKey, type CheckoutStartData } from './useStartCheckout'
 import { readStash } from '../../lib/queryCache'
 import type { Equipment, UserProfile } from '../../types'
 import { Skeleton, SkeletonScreen } from '../skeleton/Skeleton'
+import { HELP_AND_SUPPORT_URL } from '../../lib/org'
 import styles from './CheckoutConfirmHardware.module.css'
-
-// Help & support always points at the club's Discord — same link used
-// elsewhere in the member dashboard (src/data/memberActions.ts).
-const HELP_AND_SUPPORT_URL = 'https://discord.gg/zNKCN5233Y'
 
 function isOutOfStock(item: Equipment): boolean {
   return item.quantity_total <= 0
@@ -281,18 +278,20 @@ export default function CheckoutConfirmHardware() {
                   </span>
                   <ChevronRightFilled size={9} color="#474747" />
                 </button>
-                <a
-                  className={`${styles.linkRow} ${styles.linkRowBottom}`}
-                  href={HELP_AND_SUPPORT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className={styles.linkRowLeft}>
-                    <HelpIconFilled size={22} />
-                    Get help &amp; support
-                  </span>
-                  <ChevronRightFilled size={9} color="#474747" />
-                </a>
+                {HELP_AND_SUPPORT_URL && (
+                  <a
+                    className={`${styles.linkRow} ${styles.linkRowBottom}`}
+                    href={HELP_AND_SUPPORT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className={styles.linkRowLeft}>
+                      <HelpIconFilled size={22} />
+                      Get help &amp; support
+                    </span>
+                    <ChevronRightFilled size={9} color="#474747" />
+                  </a>
+                )}
               </div>
             </div>
 

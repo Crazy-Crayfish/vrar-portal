@@ -5,13 +5,13 @@ import { Header } from './Header'
 import { ProfileModal } from './ProfileModal'
 import { ArrowLeftIcon, InfoIcon, PlusIconSmallFilled, SaveIconFilled } from './icons'
 import {
-  EMAIL_ARCHIVE_CC_ADDRESS,
   EMAIL_FIELD_LABELS,
   EMAIL_TEMPLATE_DESCRIPTIONS,
   fetchEmailTemplate,
   fetchTemplateRecipients,
   setEmailTemplateArchiveCc,
   setTemplateRecipientCc,
+  ORG_INBOX,
   updateEmailTemplateContent,
   type EmailBodySegment,
   type EmailTemplate,
@@ -193,7 +193,7 @@ interface RecipientToggleProps {
 }
 
 // Shared by every switch in the Recipients section below — a real admin's
-// "to"/"cc" columns and the fixed "Synaptech" archive-CC row alike.
+// "to"/"cc" columns and the fixed organisation archive-CC row alike.
 function RecipientToggle({ label, enabled, pending, ariaLabel, onClick }: RecipientToggleProps) {
   return (
     <div className={styles.recipientToggleGroup}>
@@ -230,7 +230,7 @@ interface RecipientsSectionProps {
  * who this template's direct recipient is (a specific member, or "every
  * administrator" — see EMAIL_TEMPLATE_DESCRIPTIONS, which is what actually
  * dispatches the email), and a CC list an admin can toggle — every current
- * administrator plus a fixed "Synaptech" row for the archive CC every send
+ * administrator plus a fixed row for the organisation's archive CC every send
  * otherwise gets unconditionally. The CC list is always built from the live
  * admin roster (see fetchTemplateRecipients) rather than a stored list, so
  * it reflects who's an admin right now — someone promoted since this
@@ -250,9 +250,9 @@ function RecipientsSection({
 }: RecipientsSectionProps) {
   const recipientDescription = EMAIL_TEMPLATE_DESCRIPTIONS[templateKey]?.recipient
   // The object form means resolveEvent always sends this template straight
-  // to Synaptech's own address — so it's already in the "to" line and has
-  // no business also appearing as a toggleable CC below.
-  const recipientIsSynaptech = typeof recipientDescription === 'object'
+  // to the organisation's own inbox — so it's already in the "to" line and
+  // has no business also appearing as a toggleable CC below.
+  const recipientIsOrgInbox = typeof recipientDescription === 'object'
 
   return (
     <div className={styles.formSection}>
@@ -308,25 +308,25 @@ function RecipientsSection({
               ))}
 
               {/* Every send CCs this address unconditionally unless turned
-                  off here — see EMAIL_ARCHIVE_CC_ADDRESS/archiveCcFor in
+                  off here — see ORG_INBOX/archiveCcFor in
                   supabase/functions/_shared/sendTemplatedEmail.ts. Listed
                   like any other CC rather than back in the "About this
                   email" panel, so there's one place that shows who actually
-                  gets a template — except when Synaptech is already this
+                  gets a template — except when that inbox is already this
                   template's direct recipient (above), where offering it
                   again as a CC would just be redundant. */}
-              {!recipientIsSynaptech && (
+              {!recipientIsOrgInbox && (
                 <li className={styles.recipientRow}>
                   <div className={styles.recipientIdentity}>
-                    <span className={styles.recipientName}>Synaptech</span>
-                    <span className={styles.recipientEmail}>{EMAIL_ARCHIVE_CC_ADDRESS}</span>
+                    <span className={styles.recipientName}>{ORG_INBOX.name}</span>
+                    <span className={styles.recipientEmail}>{ORG_INBOX.email}</span>
                   </div>
 
                   <RecipientToggle
                     label="CC"
                     enabled={archiveCcEnabled}
                     pending={isArchiveCcPending}
-                    ariaLabel={`${archiveCcEnabled ? 'Remove' : 'Add'} Synaptech's archive address as a CC`}
+                    ariaLabel={`${archiveCcEnabled ? 'Remove' : 'Add'} ${ORG_INBOX.name}'s archive address as a CC`}
                     onClick={onToggleArchiveCc}
                   />
                 </li>

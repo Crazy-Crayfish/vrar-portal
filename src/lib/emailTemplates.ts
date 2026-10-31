@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { CACHE_KEYS, invalidate, peekValue, refresh, DISPLAY_REUSE_MS } from './queryCache'
+import { EMAIL_ARCHIVE_ADDRESS, ORG_NAME } from './org'
 
 export type EmailBodySegment = { type: 'text'; value: string } | { type: 'chip'; field: string }
 
@@ -13,8 +14,9 @@ export interface EmailTemplate {
   subject: string
   body: EmailBodySegment[]
   enabled: boolean
-  /** Whether the fixed archive CC (EMAIL_ARCHIVE_CC_ADDRESS) is applied to
-      this template — the "Synaptech" row in the Recipients section. */
+  /** Whether the fixed archive CC (EMAIL_ARCHIVE_ADDRESS in lib/org.ts) is
+      applied to this template — the organisation's row in the Recipients
+      section. */
   archiveCcEnabled: boolean
 }
 
@@ -40,12 +42,12 @@ export const EMAIL_FIELD_LABELS: Record<string, string> = {
   sent_time: 'TIME',
 }
 
-// Mirrors DEFAULT_ARCHIVE_CC in supabase/functions/_shared/sendTemplatedEmail.ts.
-// The frontend has no way to read that function's live EMAIL_ARCHIVE_CC
-// secret — this documents the default every template CCs, same as "Sent"
-// and "Goes to" describe default behaviour rather than a live-queried
-// per-environment value.
-export const EMAIL_ARCHIVE_CC_ADDRESS = 'synaptechuw@gmail.com'
+// The organisation's own inbox as the editor shows it: the direct recipient
+// of admin-facing templates and the archive CC on the rest. The frontend
+// can't read the Edge Functions' EMAIL_ARCHIVE_CC secret, so this is
+// EMAIL_ARCHIVE_ADDRESS from lib/org.ts, which has to be kept matching it.
+// Until it's set, the editor says so in place of an address.
+export const ORG_INBOX = { name: ORG_NAME, email: EMAIL_ARCHIVE_ADDRESS ?? 'Address not set yet' }
 
 /**
  * Editor-only copy explaining what each template is for. Not stored in the
@@ -61,7 +63,7 @@ export const EMAIL_ARCHIVE_CC_ADDRESS = 'synaptechuw@gmail.com'
  * A plain sentence for a recipient resolveEvent can't name an address for
  * ahead of time (the specific member the triggering row is about), or a
  * {name, email} pair for one resolveEvent always sends to the same known
- * address — currently only Synaptech, for the templates that used to
+ * address — currently only the organisation's own inbox, for the templates that used to
  * broadcast to every admin. The object form renders as a name+email row
  * matching the CC list below it (see RecipientsSection in
  * EditEmailTemplate.tsx), which also uses it to hide that same address
@@ -148,42 +150,42 @@ export const EMAIL_TEMPLATE_DESCRIPTIONS: Record<string, EmailTemplateDescriptio
   'hardware-item-added': {
     blurb: 'Keeps the admin team aware of new products entering the inventory.',
     timing: 'Whenever a new item is added to the hardware inventory.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
   },
   'hardware-item-modified': {
     blurb: 'Flags edits to an existing product so inventory changes are not silent.',
     timing: 'Whenever an existing inventory item is edited and saved.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
   },
   'hardware-checkout-requested': {
     blurb: 'Alerts the admin team that a member is waiting on a checkout request.',
     timing: 'Immediately after a member submits a hardware checkout request.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
   },
   'hardware-handed-off': {
     blurb: 'Records that hardware left the lab and who now holds it.',
     timing: 'When an admin approves a loan request, which is the point the hardware is handed over.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
   },
   'hardware-return-requested': {
     blurb: 'Alerts the admin team that a member wants to return an item.',
     timing:
       'Nothing sends this yet — it will fire once members can request a return from their side.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
     dormant: true,
   },
   'hardware-returned': {
     blurb: 'Records that an item came back and is available again.',
     timing:
       'Nothing sends this yet — it will fire once the return flow records a completed return.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
     dormant: true,
   },
   'hardware-item-overdue': {
     blurb: 'Escalates an overdue item to the admin team so someone can chase it.',
     timing:
       'On the daily reminder run, once an item is past its due date. Sent once per item, so the team is not alerted every day.',
-    recipient: { name: 'Synaptech', email: EMAIL_ARCHIVE_CC_ADDRESS },
+    recipient: ORG_INBOX,
   },
 }
 

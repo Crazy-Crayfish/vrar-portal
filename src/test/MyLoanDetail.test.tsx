@@ -10,6 +10,18 @@ import MyLoanDetail from '../components/user-dashboard/MyLoanDetail'
 
 vi.mock('../context/AuthContext', () => ({ useAuth: vi.fn() }))
 
+// A getter, so a test can switch the link off and see the row disappear.
+const org = vi.hoisted(() => ({ helpUrl: 'https://help.example.org' as string | null }))
+vi.mock('../lib/org', async () => {
+  const actual = await vi.importActual<typeof import('../lib/org')>('../lib/org')
+  return {
+    ...actual,
+    get HELP_AND_SUPPORT_URL() {
+      return org.helpUrl
+    },
+  }
+})
+
 vi.mock('../lib/memberLoans', async () => {
   const actual = await vi.importActual<typeof import('../lib/memberLoans')>('../lib/memberLoans')
   return { ...actual, fetchMemberLoanItem: vi.fn(), cancelLoanRequest: vi.fn() }
@@ -266,11 +278,23 @@ describe('MyLoanDetail', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('points help and support at the club Discord', async () => {
+  it('points help and support at the configured link', async () => {
     renderDetail()
 
     const help = await screen.findByRole('link', { name: /get help & support/i })
-    expect(help).toHaveAttribute('href', 'https://discord.gg/zNKCN5233Y')
+    expect(help).toHaveAttribute('href', 'https://help.example.org')
+  })
+
+  it('leaves help and support out until a link is configured', async () => {
+    org.helpUrl = null
+    try {
+      renderDetail()
+
+      await screen.findByText(item().itemName)
+      expect(screen.queryByRole('link', { name: /get help & support/i })).not.toBeInTheDocument()
+    } finally {
+      org.helpUrl = 'https://help.example.org'
+    }
   })
 
   // ── Cancelling from here ───────────────────────────────────

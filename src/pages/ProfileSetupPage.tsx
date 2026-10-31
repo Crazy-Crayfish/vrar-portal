@@ -3,13 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Profile } from '../types/index'
 import { BrandWordmark } from '../components/BrandWordmark'
+import { ORG_NAME, PRIVACY_POLICY, USAGE_POLICY } from '../lib/org'
 import styles from './ProfileSetupPage.module.css'
-
-// The Synaptech HMS Privacy Policy and the Hardware Checkout & Usage Policy
-// live as Google Docs, so the officers can update them without a deploy.
-const PRIVACY_POLICY_URL =
-  'https://docs.google.com/document/d/1CcBlw_iRk67ylRKu2XkWYUxA8kZHiqVxedKEcEnbcBw/edit?usp=sharing'
-const USAGE_POLICY_URL = 'https://docs.google.com/document/d/11RSFuvvg1F4aM9V0znWw7wFn_MZMx95T7EdlblAyPfc/edit?tab=t.0'
 
 const PRIVACY_CONSENT_ERROR = 'You must agree to the Privacy Policy to continue.'
 
@@ -271,9 +266,13 @@ export default function ProfileSetupPage() {
               </span>
               <span className={styles.consentText}>
                 I have read and agree to the{' '}
-                <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className={styles.consentLink}>
-                  Synaptech HMS Privacy Policy
-                </a>
+                {PRIVACY_POLICY.url ? (
+                  <a href={PRIVACY_POLICY.url} target="_blank" rel="noopener noreferrer" className={styles.consentLink}>
+                    {ORG_NAME} {PRIVACY_POLICY.title}
+                  </a>
+                ) : (
+                  `${ORG_NAME} ${PRIVACY_POLICY.title}`
+                )}
               </span>
             </label>
             {privacyError && (
@@ -298,10 +297,14 @@ export default function ProfileSetupPage() {
 
         <p className={styles.footer}>
           We require this information for record-keeping purposes for users of
-          Synaptech hardware in accordance with our{' '}
-          <a href={USAGE_POLICY_URL} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
-            Hardware Checkout &amp; Usage Policy
-          </a>
+          {ORG_NAME} hardware in accordance with our{' '}
+          {USAGE_POLICY.url ? (
+            <a href={USAGE_POLICY.url} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+              {USAGE_POLICY.title}
+            </a>
+          ) : (
+            USAGE_POLICY.title
+          )}
           .
         </p>
       </main>

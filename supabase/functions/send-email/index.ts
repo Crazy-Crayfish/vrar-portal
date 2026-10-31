@@ -84,12 +84,12 @@ async function fetchActorName(admin: SupabaseClient, actorId: string | null | un
 
 // Builds the dispatch entry for an admin-facing template. Broadcasting to
 // every admin's own inbox isn't admin-configurable, so instead of that
-// there's just one fixed "to": Synaptech's own address (see the
+// there's just one fixed "to": the organisation's own inbox (see the
 // `recipient` copy on EmailTemplateDescription in
 // src/lib/emailTemplates.ts) — individual admins only get a copy if
 // they're specifically opted in as a CC from the Recipients section.
-// Returns null in the (very unlikely) case the archive address is empty,
-// e.g. EMAIL_ARCHIVE_CC set to "" to disable it entirely.
+// Returns null when the archive address is empty: EMAIL_ARCHIVE_CC unset
+// (reported as an error by resolveArchiveAddress) or set to "" on purpose.
 async function dispatchToAdmins(
   admin: SupabaseClient,
   templateKey: string,

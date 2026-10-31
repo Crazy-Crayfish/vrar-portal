@@ -2,6 +2,145 @@
 
 Working notes for anyone (human or AI agent) changing this codebase: how it is laid out, how it is deployed, how the database and background jobs behave, and the reasoning behind decisions that are not obvious from the code. For a short overview of the project, see [README.md](README.md).
 
+## This is a fork
+
+This repository is a fork of the Synaptech Hardware Management System (HMS), being turned into the hardware checkout and room reservation site for the UW **VR/AR committee**, a separate organisation from Synaptech. Most of the infrastructure carries over unchanged, including check-out and return. What changes is everything tied to Synaptech (its name and branding, URLs, email addresses and Supabase project), plus the features listed in the [migration checklist](#migration-checklist) below.
+
+- **Supabase:** the site runs on a brand-new Supabase project, built from the migrations in this repo. The schema of the existing migrations stays as it is. Every new table or column comes as a **new** migration file, and none of the existing migrations are edited.
+- **Text still to be updated:** a lot of this file, the README and `documentation/` still describes Synaptech: its domain, policies and logo. Read those mentions as how the original project worked, not as settings for the fork. Update each one as the matching code changes.
+- **Nothing ties back to Synaptech:** no URL, email address, Storage object or project ref belonging to Synaptech should remain in the fork. When you see one, replace it or move it into configuration. Don't keep it as a fallback.
+- **Organisation details live in [`src/lib/org.ts`](src/lib/org.ts):** the app name, the organisation's name, the help & support and documentation links, the policy documents and the archive inbox. A link that's still `null` hasn't been provided yet; the screens leave it out (or show the document's title as plain text) until it is. The Edge Functions can't import that file, so their counterparts are secrets with **no default**: `EMAIL_FROM_ADDRESS` (required; a send without it fails and is logged as failed), `EMAIL_ARCHIVE_CC` (unset is logged as an error on every send, and admin-facing emails go nowhere) and `EMAIL_FOOTER_IMAGE_URL` (unset sends no footer). `EMAIL_ARCHIVE_ADDRESS` in `org.ts` must match `EMAIL_ARCHIVE_CC`, since the template editor shows it. `index.html`'s `<title>` repeats `APP_NAME` for the moment before React loads.
+- **The committee is UW-affiliated,** so the `@uw.edu` sign-in check, the `uw_email`/`student_id` fields and the `America/Los_Angeles` send time zone all stay. A member's NetID is the part of `uw_email` before the @; there is no separate UW single sign-on (SSO).
+- **The contract stays.** The signing system carries over, with new wording, and a second contract is added for room reservations. The home address collected at profile setup is still printed on it, so it stays too.
+
+## Migration checklist
+
+Work through the phases in order. Tick an item when it's merged, and note the PR. An item marked *needs input* is waiting on something only the committee can provide (text, assets, accounts or a decision); see [Open decisions](#open-decisions).
+
+### Phase 1: separate from Synaptech
+
+**Code (done in #1)**
+- [x] Organisation details moved into `src/lib/org.ts`. The 4 hardcoded Discord links and both policy Google Docs now come from it.
+- [x] The Edge Functions no longer fall back to Synaptech's sender name, archive inbox (`synaptechuw@gmail.com`) or footer image (stored in Synaptech's own Supabase Storage).
+- [x] The package and Cloudflare Worker are renamed `vrar-portal`, so a deploy can't overwrite Synaptech's Worker.
+- [x] The browser tab title comes from `APP_NAME`.
+
+**Values for `src/lib/org.ts`** (*needs input*)
+- [ ] `HELP_AND_SUPPORT_URL`: the committee's Discord invite, or wherever members ask for help.
+- [ ] `DOCUMENTATION_URL`: general site documentation, shown as "View documentation" on the member home page.
+- [ ] `PRIVACY_POLICY` and `USAGE_POLICY`: the committee's bylaws and terms, with their titles. Agreeing to them stays **not stored**, deliberately.
+- [ ] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox. The same value goes in the `EMAIL_ARCHIVE_CC` secret.
+- [ ] Confirm `APP_NAME` ("VR/AR Hardware Portal") and `ORG_NAME` ("VR/AR Committee"). If either changes, change `index.html`'s `<title>` too.
+
+**New Supabase project and accounts.** The existing sections below describe each step in detail; this is the fork's order of work.
+- [ ] Create the Supabase project.
+- [ ] **Write the missing `profiles` migration first. The migrations can't build a fresh project without it.** No migration creates `profiles`, which predates this repo's migration history:
+  - its columns, including `role`;
+  - the owner's read/write RLS policies and its table grants;
+  - the trigger that forces new rows to `role = 'member'`.
+
+  Yet `20260817030000_loan_requests.sql` and later migrations reference it, so running them on an empty project fails there. Take the definition from Synaptech's live database, for example with `supabase db dump --schema public` or the table's definition in the dashboard. Write it as an idempotent migration whose version sorts before `20260817000000`. Make `discord` nullable or leave it out (see "Remove Discord" in Phase 2).
+
+  While in that dump, diff the rest of the live schema against the migrations, in case anything else was only ever created by hand.
+- [ ] Run every migration in `supabase/migrations/` in filename order, in the SQL editor. Don't use `supabase db push` (see [App audit log](#app-audit-log)). The migrations also create the `equipment-images`, `loan-agreements` and `email-assets` Storage buckets.
+- [ ] Turn on `pg_cron` under **Database → Extensions**, then re-run `20260921000000_audit_log.sql` to schedule the audit-log pruning (see [Retention](#retention)).
+- [ ] Create a Google OAuth client in Google Cloud. Its callback is the new project's `/auth/v1/callback`. Enable the Google provider in Supabase Auth with that client.
+- [ ] In Supabase Auth → URL Configuration, set the Site URL and Redirect URLs to the site's origins, including the `workers.dev` one while testing.
+- [ ] Set up Resend: an API key, and a verified sending domain before real members use the site.
+- [ ] Set the Edge Function secrets: `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_ARCHIVE_CC`, and `EMAIL_FOOTER_IMAGE_URL` (after the footer image below is uploaded).
+- [ ] Deploy all 3 Edge Functions:
+  - `send-email` with `--no-verify-jwt`;
+  - `send-scheduled-reminders`;
+  - `delete-user` (used by the admin "delete member" action, `src/lib/members.ts`).
+- [ ] Create the Vault secrets `edge_functions_url` and `service_role_key` (see [One-time setup](#one-time-setup), step 5).
+- [ ] Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`, and in the Cloudflare build variables. They're read at build time, so redeploy after setting them.
+- [ ] Deploy the Worker (`npx wrangler deploy`), and add the committee's domain as a custom domain on it. The Deployment section's `hardware.synaptechuw.org` is Synaptech's and doesn't apply.
+- [ ] Sign in once, then promote that account to admin with a service-role change (only a service-role change can set `role = 'admin'`).
+- [ ] Fill in each email template's subject and body in the admin email editor. They're seeded blank, except `return-reminder-one-week`, whose seeded body names the "Synaptech Hardware Checkout Policy". Correct it there rather than in the migration.
+
+**Rebrand** (*needs input: logo and copy*)
+- [ ] The logo, replacing `src/assets/synaptech-brain.svg` and its PNG. The PNG is used by the agreement PDF, since jsPDF can't draw an SVG. Also replace `public/favicon.svg`, `public/synaptech-logo.png` and `public/synaptech-hms-banner.png`.
+- [ ] The wordmark text "Synaptech" in `BrandWordmark.tsx`, and its comments in `BrandWordmark.module.css`.
+- [ ] The welcome page: the copy at `WelcomePage.tsx:45-51` ("Synaptech @ UW", "neurotechnology student organization"), and `HardwareCarousel.tsx`, which shows Muse, Jetson and OpenBCI devices.
+- [ ] "neurotech hardware" in `CheckoutCallToAction.tsx`.
+- [ ] A new email footer image, at the same 661×121 proportions `signature.ts` assumes. Upload it to the `email-assets` bucket and point `EMAIL_FOOTER_IMAGE_URL` at it.
+- [ ] Optional: rename the `hms_welcomed` and `hms_chunk_reload_at` storage keys (`WelcomePage.tsx`, `main.tsx`). On a new domain they're harmless.
+- [ ] Optional: new fonts and colours (Bungee, Rubik, the brand blue and navy). If changed, change them in `src/styles.css` and `loanAgreementPdf.ts` together, since the PDF matches the screen.
+- [ ] The README (description, screenshot, logo), `documentation/` and the screenshots in `public/docs/`. Update each one as the screen it describes changes.
+
+**Remove label making.** Units carry UW-issued barcodes, so the app no longer prints its own labels.
+- [ ] Remove the add-item labels step, the replacement-label page and the get-labels browse/product pages, with their routes and `ROUTE_TITLES` entries.
+- [ ] Remove `components/admin-dashboard/labels/`, `src/lib/labelPdf.ts`, `src/lib/code128.ts`, and the QR images `qr-checkout-policy.png` and `qr-item-docs.png`. The QR images encode Synaptech URLs.
+- [ ] Remove the label entry points on the admin home and in `EquipmentUnitsTable`, and the "HMS inventory system" wording in `AddInventoryItemLabelsPage.tsx`.
+- [ ] Drop `html2canvas` and any other dependency once nothing imports it.
+- [ ] Delete or update the label tests (`GetLabelsBrowse.test.tsx`, `code128.test.tsx`).
+
+### Phase 2: equipment
+
+**UW barcodes instead of `SYN-` serials**
+- [ ] `normalizeSerialNumber` stops adding the `SYN-` prefix and only trims and uppercases. Remove the `SERIAL_PREFIX` checks in `CheckoutScan`, `ReturnScan`, `InventoryAuditScan` and `SerialEntryModal`.
+- [ ] Admins type or scan the UW tag number when adding a unit (`inventory.ts:164`), instead of `generateSerialNumbers` making one up.
+- [ ] `useBarcodeScanner` reads only `code_128`. Add the UW tags' format to `SERIAL_FORMATS` (*needs input*: scan a tag to find out which it is).
+- [ ] Update `serialNumber.test.ts` and the scan tests that use `SYN-` serials.
+
+**New equipment contract** (*needs input: the wording*). The signing system stays as it is.
+- [ ] Replace the text in `src/lib/loanAgreementContent.ts` (title, intro, sections 3–8, the signing disclaimer). Both `AgreementPreview` and `loanAgreementPdf.ts` read it.
+- [ ] Sections 1, 2, 9 and 10 (the parties, the item and serial, the borrower's signature, the receiving manager's sign-off) are laid out in code in both `AgreementPreview.tsx` and `loanAgreementPdf.ts`. Change them in step, including the "SYNAPTECH" header and "For Synaptech RSO Hardware Managers".
+- [ ] If section 2 changes shape, update `locateSerialNumberCell`. `restampAgreementSerial` uses it to rewrite the serial when an admin switches the unit on a request.
+- [ ] Section 6's sliding liability scale uses each item's replacement value. Keep or replace it according to the new terms.
+- [ ] Reword the Certificate of Approval page in `loanAgreementApproval.ts`.
+
+**Training**
+- [ ] The training link reuses `documentation_url`. Relabel it as training in the add/edit item pages, the catalog item page, the checkout confirm step and the member's loan detail. Add a separate `training_url` only if documentation and training material are kept apart.
+- [ ] A tick-box in checkout confirming the member has read the training material. It must be ticked to continue, like the contract.
+- [ ] Store the confirmation the same way as the contract signature: a new column on `loan_request_items` (e.g. `training_confirmed_at`), written in the same insert in `submitLoanRequest` that stores `signature_name` and `signature_date`. The database records it and doesn't enforce it, as with the contract.
+- [ ] Show it on the loan detail screen next to the signed agreement, with "Not recorded" for items submitted before the column existed.
+
+**AirTag at hand-off**
+- [ ] During the hand-off, the admin records which AirTag went with the hardware. It's a new column on `loan_request_items`, shown on the loan detail screen.
+- [ ] Optional: the return flow prompts the admin to check the AirTag came back.
+- [ ] There is no AirTag API. Tracking happens in Find My; the app only records which tag went where.
+
+**Other equipment items**
+- [ ] Suggested projects: a new field on `equipment`, edited on the add/edit item pages and shown in the catalog.
+- [ ] Schedule `send-scheduled-reminders` daily (see [One-time setup](#one-time-setup), step 6). The function already sends 7 days before the due date, on the due date, and when overdue.
+- [ ] Keep: optional and required add-ons, as they are.
+
+**New equipment categories** (*needs input: the list*). The current `category` values (recording, modulation, tools, peripherals, computing, virtual_reality) come from Synaptech's neurotech catalog. Expect far fewer categories, mostly VR/AR.
+- [ ] A new migration that drops `equipment_category_check` (from `20260817010000_equipment_category.sql`) and adds it back with the new values. If it runs after items have been added, it also has to move existing rows onto the new values first.
+- [ ] Update `EquipmentCategory` in `src/types.ts` and `CATEGORY_OPTIONS` in `src/lib/equipmentCategories.ts`. That covers the add/edit item pages, the catalog's filter chips (`InventoryFilterChips`) and grouping (`useInventoryCatalog`). Consumables stay a separate `product_type` with their own filter chip.
+- [ ] Update the tests that use the old category values.
+
+**Remove Discord.** The committee doesn't use it.
+- [ ] Remove the required "Discord username" field from profile setup (`ProfileSetupPage.tsx`, its form state and validation) and from `ProfileSetupPage.test.tsx`.
+- [ ] Remove the Discord rows from the admin screens: `MemberDetail.tsx` (with its copy button), `LoanDetail.tsx` (`memberDiscord`, selected in `loanRequests.ts`), and `ViewMembers.tsx` (shown in the list and searched).
+- [ ] About 30 screens pass `profile.discord` to the header as `handle`, and `ProfileModal` shows it under the member's name. Replace it with something else (the NetID from `uw_email` is the natural choice) or drop the line.
+- [ ] Drop `discord` from the `Profile` type (`src/types/index.ts`) and from `AuditLog.tsx`'s field labels. The column itself can stay unused, as long as it allows null (see the `profiles` item in Phase 1). The audit trigger's field list in `20260921000000_audit_log.sql` can keep naming it, since it simply never changes.
+
+### Phase 3: room reservations
+
+Members reserve the committee's room as a whole. A room reservation does **not** include equipment for now; see [Open decisions](#open-decisions).
+
+- [ ] Database: a reservations table, linked to the member (their NetID comes from `uw_email`). It needs:
+  - RLS policies and table grants;
+  - a database-side guard against overlapping bookings, in the spirit of [One unit, one borrower](#one-unit-one-borrower);
+  - audit triggers.
+- [ ] Member flow: choose a time (adapt `AvailabilityGrid`), sign the room contract, submit. Also: see and cancel their reservations.
+- [ ] Admin: approve, deny or cancel, with a list and a detail screen.
+- [ ] Emails through the existing template system: new templates and `send-email` cases. Redeploy `send-email` afterwards.
+- [ ] The room contract (*needs input: the wording*). Make the agreement content and the code-laid-out sections depend on the kind of contract, rather than copying the components. The room version has a date-and-time block instead of the item/serial section.
+- [ ] Store the signed room contract like the equipment one: one PDF per reservation in the `loan-agreements` bucket, with its path and the signer's name and date on the reservation row.
+- [ ] Routes, `ROUTE_TITLES` entries, the member home and admin home entry points, tests, and a guide in `documentation/`.
+
+### Open decisions
+
+Not yet known, but expected soon. Each one blocks only the items marked *needs input* that depend on it.
+
+- **Can a room reservation include equipment?** Assumed no for now. If yes, a reservation would need to hold units the way a loan request does.
+- **Which barcode format do UW property tags use?** It blocks the `SERIAL_FORMATS` change.
+- **The new equipment categories.** Expect far fewer, mostly VR/AR. It blocks the categories item in Phase 2.
+- **Wording and assets:** the equipment contract, the room contract, the bylaws and terms, the logo and the welcome copy.
+
 ## Conventions
 
 - **No server of our own.** The app is a Vite + React SPA that talks straight to Supabase (PostgREST, Auth, Storage) from the browser. Anything needing a secret runs in a Supabase Edge Function or a Postgres trigger, never in the client.
@@ -17,7 +156,7 @@ Working notes for anyone (human or AI agent) changing this codebase: how it is l
 - **Styling:** CSS Modules next to each component; a few shared global classes and design tokens (`--blue-bg`, `--green-fg`, …) live in `src/styles.css`. Layouts are responsive, with phone breakpoints at 640px and 480px (and 800px on the member home page).
 - **Dialogs** use [`ModalDialog`](src/components/ModalDialog.tsx) for the box inside each modal's overlay: it supplies `role="dialog"`, moves focus in and back out, keeps Tab inside, and calls `onClose` on Escape (pass `undefined` while the dialog is busy, and do the same for the overlay's click). Don't hand-roll `role="dialog"` on a div.
 - **Page titles** come from `ROUTE_TITLES` in [`src/router.tsx`](src/router.tsx). A new route needs an entry there; `router.test.tsx` fails if one is missing.
-- **Tests:** Vitest + React Testing Library in `src/test/`. Run `npm run test:run` and `npm run build` (which type-checks) before pushing.
+- **Tests:** Vitest + React Testing Library in `src/test/`. Run `npm run test:run` and `npm run build` (which type-checks) before pushing: CI (`.github/workflows/node.js.yml`) only runs the build, not the tests. `src/lib/supabase.ts` throws at import without `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`, so with no `.env.local`, run the tests with placeholder values for both.
 
 ## Project structure
 
@@ -131,7 +270,7 @@ The `equipment`/`equipment_units` columns and the `equipment_addons` table, RLS 
 
 ## Automated emails
 
-Every automated email is CC'd to an archive address (`synaptechuw@gmail.com` by default) so the club keeps a copy outside the app. Override it per environment with the `EMAIL_ARCHIVE_CC` secret, or set that secret to an empty string to switch the archive copy off. The CC is skipped when the archive address is already the recipient, so it never double-delivers.
+Every automated email is CC'd to an archive address so the club keeps a copy outside the app. It is the `EMAIL_ARCHIVE_CC` secret, with no default: unset is logged as an error on every send. Set that secret to an empty string to switch the archive copy off on purpose. The same address is the direct recipient of the admin-facing templates, and the template editor displays it from `EMAIL_ARCHIVE_ADDRESS` in `src/lib/org.ts`, so keep the two matching. The CC is skipped when the archive address is already the recipient, so it never double-delivers.
 
 The admin "Sent email log" screen (`/adminHome/emails/log`) lists every send — status, template, recipient, CC and timestamp — and opens each row to show the subject, the rendered body exactly as sent, and the provider's error for failures. Failures are logged as well as successes, which is usually what you need to debug one.
 
@@ -153,11 +292,15 @@ This app has no server of its own — it's Vite + React talking directly to Supa
    ```bash
    supabase secrets set RESEND_API_KEY=re_...
    ```
-   Without a verified sending domain, Resend's shared `onboarding@resend.dev` sender only delivers to the Resend account's own email — fine for testing, not for real members. Once you verify a domain, also set `EMAIL_FROM_ADDRESS` (e.g. `Synaptech Hardware <hardware@your-domain.org>`).
-
-   The archive CC defaults to `synaptechuw@gmail.com` with no configuration. To change or disable it:
+   Also set the sender, which has no default (a send without it fails and lands in the email log as failed). Before a domain is verified, Resend's shared `onboarding@resend.dev` sender only delivers to the Resend account's own email — fine for testing, not for real members:
    ```bash
-   supabase secrets set EMAIL_ARCHIVE_CC=someone-else@example.org   # or "" to disable
+   supabase secrets set EMAIL_FROM_ADDRESS="VR/AR Hardware <onboarding@resend.dev>"   # a verified domain's address once you have one
+   ```
+
+   Set the archive inbox, matching `EMAIL_ARCHIVE_ADDRESS` in `src/lib/org.ts`, and optionally the footer image (a public URL, e.g. in a public Storage bucket of this project; without it emails have no footer):
+   ```bash
+   supabase secrets set EMAIL_ARCHIVE_CC=committee-inbox@example.org   # or "" to disable
+   supabase secrets set EMAIL_FOOTER_IMAGE_URL=https://<project-ref>.supabase.co/storage/v1/object/public/email-assets/email-footer.png
    ```
    Note the sandbox restriction applies to the CC too: until a domain is verified, Resend will reject a send whose CC isn't the Resend account's own address.
 3. Deploy `send-email` with JWT verification off (see above for why):

@@ -35,6 +35,7 @@ import AdminReturnPickLoanPage from './pages/AdminReturnPickLoanPage'
 import AdminReturnConfirmPage from './pages/AdminReturnConfirmPage'
 import AdminCheckoutHardwarePage from './pages/AdminCheckoutHardwarePage'
 import AdminCheckoutPickLoanPage from './pages/AdminCheckoutPickLoanPage'
+import { APP_NAME } from './lib/org'
 
 // Split into their own chunks: rarely visited, or built around the agreement
 // document and label rendering, so most sessions never need their code.
@@ -212,14 +213,13 @@ export const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/adminHome/checkout/:id/agreement', 'Check out hardware: agreement'],
 ]
 
-const APP_TITLE = 'Synaptech HMS'
 
 function RouteTitle() {
   const { pathname } = useLocation()
 
   useEffect(() => {
     const match = ROUTE_TITLES.find(([pattern]) => matchPath(pattern, pathname))
-    document.title = match ? `${match[1]} – ${APP_TITLE}` : APP_TITLE
+    document.title = match ? `${match[1]} – ${APP_NAME}` : APP_NAME
   }, [pathname])
 
   return null
