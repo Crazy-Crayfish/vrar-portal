@@ -45,4 +45,4 @@ export const USAGE_POLICY: OrgDocument = {
  * EMAIL_ARCHIVE_CC secret on the Edge Functions. The browser can't read that
  * secret, so the email template editor shows this value instead.
  */
-export const EMAIL_ARCHIVE_ADDRESS: string | null = null
+export const EMAIL_ARCHIVE_ADDRESS: string | null = 'arvrcommittee@gmail.com'
