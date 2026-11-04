@@ -30,7 +30,7 @@ Work through the phases in order. Tick an item when it's merged, and note the PR
 - [ ] `HELP_AND_SUPPORT_URL`: the committee's Discord invite, or wherever members ask for help.
 - [ ] `DOCUMENTATION_URL`: general site documentation, shown as "View documentation" on the member home page.
 - [ ] `PRIVACY_POLICY` and `USAGE_POLICY`: the committee's bylaws and terms, with their titles. Agreeing to them stays **not stored**, deliberately.
-- [ ] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox. The same value goes in the `EMAIL_ARCHIVE_CC` secret.
+- [x] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox, `arvrcommittee@gmail.com` (it replaces Synaptech's `synaptechuw@gmail.com`). The same value is in the `EMAIL_ARCHIVE_CC` secret; change both together.
 - [ ] Confirm `APP_NAME` ("VR/AR Hardware Portal") and `ORG_NAME` ("VR/AR Committee"). If either changes, change `index.html`'s `<title>` too.
 
 **New Supabase project and accounts.** The existing sections below describe each step in detail; this is the fork's order of work.
@@ -44,7 +44,7 @@ Work through the phases in order. Tick an item when it's merged, and note the PR
 - [ ] In Supabase Auth → URL Configuration, set the Site URL and Redirect URLs to the site's origins, including the `workers.dev` one while testing.
 - [ ] Set up Resend: an API key, and a verified sending domain before real members use the site.
 - [ ] Set the Edge Function secrets: `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_ARCHIVE_CC`, and `EMAIL_FOOTER_IMAGE_URL` (after the footer image below is uploaded).
-- [ ] Deploy all 3 Edge Functions. They're declared in [`supabase/config.toml`](supabase/config.toml), so the GitHub integration deploys them on every push to `main`, with `send-email`'s JWT check off:
+- [x] Deploy all 3 Edge Functions (first deployed by the merge of #5). They're declared in [`supabase/config.toml`](supabase/config.toml), so the GitHub integration deploys them on every push to `main`, with `send-email`'s JWT check off:
   - `send-email`;
   - `send-scheduled-reminders`;
   - `delete-user` (used by the admin "delete member" action, `src/lib/members.ts`).
