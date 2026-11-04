@@ -1,0 +1,20 @@
+# Read by Supabase's GitHub integration, which deploys this directory to the
+# live project on every push to main: new files in migrations/ are applied,
+# and the Edge Functions declared below are deployed. Every other setting
+# (Auth, API, storage) is managed in the dashboard and left at its default
+# here; see AGENTS.md.
+
+project_id = "vrar-portal"
+
+# Called by Postgres through pg_net with a project secret key, not a user
+# JWT, so the platform's JWT check is off and the function checks the key
+# itself.
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-scheduled-reminders]
+verify_jwt = true
+
+# Called from the admin "delete member" action with the admin's session.
+[functions.delete-user]
+verify_jwt = true
