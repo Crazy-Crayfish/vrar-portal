@@ -18,6 +18,61 @@ This repository is a fork of the Synaptech Hardware Management System (HMS), bei
 
 Work through the phases in order. Tick an item when it's merged, and note the PR. An item marked *needs input* is waiting on something only the committee can provide (text, assets, accounts or a decision); see [Open decisions](#open-decisions).
 
+### Current status (2026-11-05)
+
+A snapshot for whoever picks this up next; the checklist below is the detailed record. Recheck the live facts with the Supabase connector (project ref `ctrwrzbckugapdvhaaez`) before acting on them.
+
+**Live state, checked 2026-11-05.**
+- *Database:* 43 migrations recorded, the latest `20261104000000`; the `prune-audit-log` cron job exists.
+- *Not done yet:* 0 rows in `auth.users`, 0 in `profiles` and 0 in `email_log`. Neither Vault secret exists. There's no `.env.local`.
+- *Repo:* `main` is at the merge of #7, with no open PRs.
+
+To recheck in one query:
+
+```sql
+select
+  (select count(*) from auth.users) as auth_users,
+  (select count(*) from public.profiles where role = 'admin') as admins,
+  (select string_agg(name, ',') from vault.decrypted_secrets
+     where name in ('edge_functions_url', 'service_role_key')) as vault_secrets,
+  (select count(*) from public.email_log) as emails_logged,
+  (select max(version) from supabase_migrations.schema_migrations) as latest_migration;
+```
+
+**Done by the user since #7:** Auth URL Configuration for `http://localhost:5173`; a Resend account and API key; the `RESEND_API_KEY` and `EMAIL_FROM_ADDRESS` secrets.
+
+**Skipped on purpose:** a verified sending domain. The committee has none and won't get one, so for now no email reaches anyone (see [Email delivery without a domain](#email-delivery-without-a-domain)). Don't make this block the steps below.
+
+**The user's next steps, in order:**
+1. **Vault secrets.** Run this in the SQL editor. The secret value is the *first* argument:
+   ```sql
+   select vault.create_secret('https://ctrwrzbckugapdvhaaez.functions.supabase.co', 'edge_functions_url');
+   select vault.create_secret('<secret key from Settings → API Keys → Secret keys>', 'service_role_key');
+   ```
+   Use a new-style secret key (`sb_secret_…`), not the legacy `service_role` JWT.
+2. **`.env.local`** in the repo root:
+   ```
+   VITE_SUPABASE_URL=https://ctrwrzbckugapdvhaaez.supabase.co
+   VITE_SUPABASE_ANON_KEY=<publishable key from Settings → API Keys>
+   ```
+3. Run `npm run dev`, sign in with Google using a `@uw.edu` account and finish profile setup. While the OAuth app is in testing mode, that Google account must be on its test-user list (Google Auth Platform → Audience).
+
+**The agent's next steps:**
+1. Once `auth.users`/`profiles` has the user's row, promote them via the connector: `update public.profiles set role = 'admin' where uw_email = '<their uw email>';`. The role guard allows this because the connector runs with no signed-in user. Confirm the email with the user first, and recheck afterwards.
+2. After the Vault secrets exist, check that the profile-created email was *attempted*: there should be a row in `email_log`. It will be `failed` with a Resend test-mode error. That's expected, and it proves the trigger → `pg_net` → `send-email` path works.
+3. Work that needs no input from the committee, as separate PRs, each run through `npm run test:run` and `npm run build`. Offer them, and start whichever the user picks:
+   - **Remove label making** (Phase 1). It was offered before and isn't started.
+   - **Remove Discord** (Phase 2).
+   - **Schedule `send-scheduled-reminders` daily:** a `pg_cron` + `pg_net` migration using the same Vault secrets, plus `verify_jwt = false` and the secret-key check in the function, as `send-email` has. It can merge now, but no reminder will be delivered until email delivery is sorted.
+   - **Training confirmation** and **AirTag at hand-off**: new columns via new migrations, plus UI.
+4. Raise [email delivery](#email-delivery-without-a-domain) with the user as a decision, and don't build a Gmail SMTP sender until they agree to it.
+
+**Still waiting on the committee:** the `org.ts` links and policies; the logo, footer image and welcome copy; the wording of both contracts; the category list; the UW tag barcode format; whether room bookings include equipment; how email reaches members.
+
+**Connector quirks:**
+- Edge Function secrets can't be set through the connector ("Storing keys is paused") or listed by it. The user sets them in the dashboard.
+- `apply_migration` records the current timestamp as the version, so never use it for repo migrations; they deploy on merge to `main`.
+
 ### Phase 1: separate from Synaptech
 
 **Code (done in #1)**
@@ -42,9 +97,9 @@ Work through the phases in order. Tick an item when it's merged, and note the PR
 - [x] Turn on `pg_cron` and schedule the audit-log pruning (#5, [`20261104000000_audit_log_pruning_schedule.sql`](supabase/migrations/20261104000000_audit_log_pruning_schedule.sql); see [Retention](#retention)).
 - [x] Create a Google OAuth client in Google Cloud. Its callback is the new project's `/auth/v1/callback`. Enable the Google provider in Supabase Auth with that client. Done under the committee's Google account as an **External** app with only the `openid`, `userinfo.email` and `userinfo.profile` scopes, so no Google verification is needed. Its authorized JavaScript origin is `http://localhost:5173` for now.
 - [ ] Add the site's real origin(s) to the OAuth client's authorized JavaScript origins once the Worker is deployed, then **Publish app** under Audience in the Google Auth Platform. Until then the app is in testing mode and only its listed test users can sign in.
-- [ ] In Supabase Auth → URL Configuration, set the Site URL and Redirect URLs to the site's origins, including the `workers.dev` one while testing.
-- [ ] Set up Resend: an API key, and a verified sending domain before real members use the site.
-- [ ] Set the Edge Function secrets: `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_ARCHIVE_CC`, and `EMAIL_FOOTER_IMAGE_URL` (after the footer image below is uploaded). `EMAIL_ARCHIVE_CC` is set (`arvrcommittee@gmail.com`); the other three aren't yet. Set them in the dashboard (Edge Functions → Secrets).
+- [ ] In Supabase Auth → URL Configuration, set the Site URL and Redirect URLs to the site's origins, including the `workers.dev` one while testing. *Done for local development:* the Site URL is `http://localhost:5173`, which is also in Redirect URLs. Add the `workers.dev` origin once the Worker is deployed.
+- [ ] Set up Resend. *The account and API key exist.* There is **no sending domain, and the committee won't get one**, so Resend stays in test mode and real members can't receive email. See [Email delivery without a domain](#email-delivery-without-a-domain) under Open decisions.
+- [ ] Set the Edge Function secrets in the dashboard (Edge Functions → Secrets). Set so far: `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` (`VR/AR Hardware <onboarding@resend.dev>`, Resend's shared test sender) and `EMAIL_ARCHIVE_CC` (`arvrcommittee@gmail.com`). `EMAIL_FOOTER_IMAGE_URL` waits for the footer image below. The connector can neither set nor list secrets, so ask the user to confirm.
 - [x] Deploy all 3 Edge Functions (first deployed by the merge of #5). They're declared in [`supabase/config.toml`](supabase/config.toml), so the GitHub integration deploys them on every push to `main`, with `send-email`'s JWT check off:
   - `send-email`;
   - `send-scheduled-reminders`;
@@ -53,7 +108,7 @@ Work through the phases in order. Tick an item when it's merged, and note the PR
   A new function needs its own `[functions.<name>]` entry there, or it isn't deployed.
 - [ ] Create the Vault secrets `edge_functions_url` and `service_role_key` (see [One-time setup](#one-time-setup), step 5).
 - [ ] Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`, and in the Cloudflare build variables. They're read at build time, so redeploy after setting them.
-- [ ] Deploy the Worker (`npx wrangler deploy`), and add the committee's domain as a custom domain on it. The Deployment section's `hardware.synaptechuw.org` is Synaptech's and doesn't apply.
+- [ ] Deploy the Worker (`npx wrangler deploy`). The committee has no domain, so the site lives at its `workers.dev` address; there's no custom domain to add. The Deployment section's `hardware.synaptechuw.org` is Synaptech's and doesn't apply.
 - [ ] Sign in once and finish profile setup, then promote that account to admin from the SQL editor: `update public.profiles set role = 'admin' where uw_email = '<your uw email>';`. Later admins can be promoted from the app.
 - [ ] Fill in each email template's subject and body in the admin email editor. They're seeded blank, except `return-reminder-one-week`, whose seeded body names the "Synaptech Hardware Checkout Policy". Correct it there rather than in the migration.
 
@@ -137,6 +192,19 @@ Not yet known, but expected soon. Each one blocks only the items marked *needs i
 
 - **Can a room reservation include equipment?** Assumed no for now. If yes, a reservation would need to hold units the way a loan request does.
 - **Which barcode format do UW property tags use?** It blocks the `SERIAL_FORMATS` change.
+- **How emails reach members without a domain.** See [Email delivery without a domain](#email-delivery-without-a-domain) below. It blocks real-member email, and the reminder schedule can't be checked end to end until it's settled.
+
+#### Email delivery without a domain
+
+The committee has no domain and won't get one (decided 2026-11-05). That rules out Resend for real use, since Resend in test mode, sending as `onboarding@resend.dev`, only delivers to the email the Resend account was created with. The rule covers every recipient, **CC included**. `send-email` CCs every message to `EMAIL_ARCHIVE_CC` (`arvrcommittee@gmail.com`), and a member-facing email therefore has two different addresses on it, so Resend rejects **every** send as things stand. Admin-facing templates go only to the archive inbox, so they'd get through only if the Resend account was created with `arvrcommittee@gmail.com`.
+
+Why this doesn't block anything else yet:
+- Emails are fire-and-forget (`notify_email_event` → `pg_net` → `send-email`). A failed send loses that email only; the sign-up, checkout or return that caused it still succeeds.
+- Until the Vault secrets exist, `notify_email_event` doesn't call the function at all. Once they do, rejected sends land in `email_log` as **failed** with Resend's error, visible on the admin "Sent email log" screen.
+
+To see an email arrive while testing: create the Resend account with the address you'll test with, and set `EMAIL_ARCHIVE_CC` to an empty value. Admin-facing emails then go nowhere. Put `arvrcommittee@gmail.com` back afterwards.
+
+For real members, the committee still has to pick a sender that doesn't need a domain. Not decided, and nothing is built yet. The likely candidate is **sending through the committee's Gmail** (`arvrcommittee@gmail.com`) over SMTP with an app password. That means 2-step verification on the account, a Gmail daily sending cap (fine at this volume), and swapping the Resend call in `send-email` for an SMTP client. Mail sent through Gmail's own servers as a `@gmail.com` address passes Gmail's checks; sending as `@gmail.com` through any *other* provider would fail DMARC and land in spam, so the "verify a single sender" options other providers offer are no substitute. Before building it, check the current Gmail limits and Supabase's Edge Function network limits: as far as we know, outbound ports 25 and 587 are blocked there, so plan on implicit TLS on port 465 (`smtp.gmail.com:465`).
 - **The new equipment categories.** Expect far fewer, mostly VR/AR. It blocks the categories item in Phase 2.
 - **Wording and assets:** the equipment contract, the room contract, the bylaws and terms, the logo and the welcome copy.
 
