@@ -6,7 +6,7 @@ import { ProfileModal } from './ProfileModal'
 import ConfirmActionModal from '../ConfirmActionModal'
 import { ArrowLeftIcon, CameraIconFilled, CheckmarkIconFilled } from './icons'
 import { useBarcodeScanner } from '../../hooks/useBarcodeScanner'
-import { normalizeSerialNumber, SERIAL_PREFIX } from '../../lib/serialNumber'
+import { normalizeSerialNumber } from '../../lib/serialNumber'
 import {
   fetchAuditableInventory,
   recordInventoryAudit,
@@ -281,7 +281,7 @@ export default function InventoryAuditScan() {
   const registerBarcode = useCallback(
     (rawValue: string) => {
       const serial = normalizeSerialNumber(rawValue)
-      if (!serial || serial === SERIAL_PREFIX) return
+      if (!serial) return
 
       const known = unitBySerial.get(serial)
       const alreadyScanned = scans.has(serial)
@@ -492,9 +492,6 @@ export default function InventoryAuditScan() {
                 <div className={styles.manualEntry}>
                   <div className={styles.manualRow}>
                     <div className={styles.serialField}>
-                      <span className={styles.serialPrefix} aria-hidden="true">
-                        {SERIAL_PREFIX.replace('-', ' -')}
-                      </span>
                       <input
                         id="audit-manual-serial"
                         className={styles.serialInput}

@@ -121,13 +121,12 @@ describe('HandOffScan', () => {
     expect(await screen.findByText('Loan agreement sign off', {}, { timeout: 3000 })).toBeInTheDocument()
   })
 
-  // Labels are printed with the SYN- prefix but some scanners hand back only
-  // the payload, so the comparison normalises both sides.
-  it('accepts a barcode that omits the SYN- prefix', async () => {
+  // The comparison is case-insensitive and ignores stray whitespace.
+  it('accepts a barcode in lower case', async () => {
     renderScan()
     await screen.findByText('Muse 2')
 
-    detectBarcode?.('hjxpp41t5')
+    detectBarcode?.(' syn-hjxpp41t5 ')
 
     expect(await screen.findByText('Loan agreement sign off', {}, { timeout: 3000 })).toBeInTheDocument()
   })

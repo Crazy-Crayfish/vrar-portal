@@ -151,13 +151,12 @@ describe('ReturnScan', () => {
     ).toBeInTheDocument()
   })
 
-  // Labels are printed with the SYN- prefix but some scanners hand back only
-  // the payload, so the lookup normalises both sides.
-  it('accepts a barcode that omits the SYN- prefix', async () => {
+  // The lookup is case-insensitive and ignores stray whitespace.
+  it('accepts a barcode in lower case', async () => {
     renderReturn()
     await screen.findByText(/please scan the hardware item barcode/i)
 
-    detectBarcode?.('hjxpp41t5')
+    detectBarcode?.(' syn-hjxpp41t5 ')
 
     expect(
       await screen.findByText(/Confirm \/adminHome\/return\/item-1\/confirm/, {}, { timeout: 3000 }),
@@ -209,7 +208,7 @@ describe('ReturnScan', () => {
     renderReturn()
     await openSerialDialog()
 
-    await userEvent.type(screen.getByLabelText('Serial number'), 'HJXPP41T5{Enter}')
+    await userEvent.type(screen.getByLabelText('Serial number'), 'SYN-HJXPP41T5{Enter}')
 
     expect(
       await screen.findByText('Confirm /adminHome/return/item-1/confirm via manual'),
@@ -225,7 +224,7 @@ describe('ReturnScan', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /enter a serial number/i })
     expect(
-      within(dialog).getByText('SYN-NOTOURS99 is not recognised in inventory'),
+      within(dialog).getByText('NOTOURS99 is not recognised in inventory'),
     ).toBeInTheDocument()
   })
 
