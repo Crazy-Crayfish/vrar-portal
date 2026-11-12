@@ -21,4 +21,4 @@ This functionality is available to non-admin users
 
 
 5. In the item detail page you'll be able to view documentation if available, and initiate a checkout.
-6. The help & support links to our #hardware channel in the Discord if you need troubleshooting support
+6. The help & support link takes you to where the committee answers troubleshooting questions

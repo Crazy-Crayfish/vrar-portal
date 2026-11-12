@@ -113,7 +113,7 @@
   white-space: nowrap;
 }
 
-/* Email, student ID and Discord: the value and the copy icon are one
+/* Email and student ID: the value and the copy icon are one
    button, so clicking either copies — a value worth copying is a value
    someone's about to paste elsewhere, not read off the screen. */
 .rowValueCopy {

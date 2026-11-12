@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Header } from './Header'
 import { ProfileModal } from './ProfileModal'
 import { SearchBar } from './SearchBar'
-import { ArrowLeftIcon, ClockIcon, HandleIcon, MailIcon } from './icons'
+import { ArrowLeftIcon, ClockIcon, MailIcon } from './icons'
 import { fetchAllProfiles, peekAllProfiles } from '../../lib/members'
 import { Skeleton, SkeletonScreen } from '../skeleton/Skeleton'
 import type { Profile } from '../../types/index'
@@ -17,7 +17,7 @@ function formatJoinedDate(iso: string): string {
 }
 
 function matchesQuery(member: Profile, query: string): boolean {
-  const haystack = `${member.first_name} ${member.last_name} ${member.uw_email} ${member.discord}`.toLowerCase()
+  const haystack = `${member.first_name} ${member.last_name} ${member.uw_email}`.toLowerCase()
   return haystack.includes(query)
 }
 
@@ -60,7 +60,6 @@ export default function ViewMembers() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])
@@ -142,15 +141,10 @@ export default function ViewMembers() {
                       <span>{member.uw_email}</span>
                     </span>
 
-                    <span className={styles.memberDetail}>
-                      <HandleIcon size={18} />
-                      <span>{member.discord}</span>
-                    </span>
-
                     <span className={styles.memberJoined}>
                       {/* Shown on phone only (see .memberJoinedIcon) — at
                           tablet and desktop it shares a row with an icon of
-                          its own already (email or handle). */}
+                          its own already (the email). */}
                       <ClockIcon size={18} className={styles.memberJoinedIcon} />
                       Joined {formatJoinedDate(member.created_at)}
                     </span>

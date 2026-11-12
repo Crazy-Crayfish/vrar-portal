@@ -36,6 +36,6 @@ This guide outlines how to check out hardware as a non-admin user.
 
 
 7. Click Done
-8. Now, you'll receive a confirmation email from HMS and soon, one of our Hardware Managers will reach out to you on Discord or by email to schedule a time to collect the requested item.
+8. Now, you'll receive a confirmation email from HMS and soon, one of our Hardware Managers will reach out to you by email to schedule a time to collect the requested item.
 
 

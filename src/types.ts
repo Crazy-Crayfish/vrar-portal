@@ -9,7 +9,6 @@ export interface UserProfile {
   name: string;
   role: "ADMINISTRATOR" | "MEMBER";
   email: string;
-  handle: string;
   location: string;
 }
 

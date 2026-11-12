@@ -62,7 +62,7 @@ select
 2. After the Vault secrets exist, check that the profile-created email was *attempted*: there should be a row in `email_log`. It will be `failed` with a Resend test-mode error. That's expected, and it proves the trigger → `pg_net` → `send-email` path works.
 3. Work that needs no input from the committee, as separate PRs, each run through `npm run test:run` and `npm run build`. Offer them, and start whichever the user picks:
    - ~~Remove label making~~ (Phase 1): done, see the checklist.
-   - **Remove Discord** (Phase 2).
+   - ~~Remove Discord~~ (Phase 2): done, see the checklist.
    - **Schedule `send-scheduled-reminders` daily:** a `pg_cron` + `pg_net` migration using the same Vault secrets, plus `verify_jwt = false` and the secret-key check in the function, as `send-email` has. It can merge now, but no reminder will be delivered until email delivery is sorted.
    - **Training confirmation** and **AirTag at hand-off**: new columns via new migrations, plus UI.
 4. Raise [email delivery](#email-delivery-without-a-domain) with the user as a decision, and don't build a Gmail SMTP sender until they agree to it.
@@ -82,7 +82,7 @@ select
 - [x] The browser tab title comes from `APP_NAME`.
 
 **Values for `src/lib/org.ts`** (*needs input*)
-- [ ] `HELP_AND_SUPPORT_URL`: the committee's Discord invite, or wherever members ask for help.
+- [ ] `HELP_AND_SUPPORT_URL`: a chat invite, a form, or wherever members ask for help.
 - [ ] `DOCUMENTATION_URL`: general site documentation, shown as "View documentation" on the member home page.
 - [ ] `PRIVACY_POLICY` and `USAGE_POLICY`: the committee's bylaws and terms, with their titles. Agreeing to them stays **not stored**, deliberately.
 - [x] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox, `arvrcommittee@gmail.com` (it replaces Synaptech's `synaptechuw@gmail.com`). The same value is in the `EMAIL_ARCHIVE_CC` secret; change both together.
@@ -166,10 +166,10 @@ select
 - [ ] Update the tests that use the old category values.
 
 **Remove Discord.** The committee doesn't use it.
-- [ ] Remove the required "Discord username" field from profile setup (`ProfileSetupPage.tsx`, its form state and validation) and from `ProfileSetupPage.test.tsx`.
-- [ ] Remove the Discord rows from the admin screens: `MemberDetail.tsx` (with its copy button), `LoanDetail.tsx` (`memberDiscord`, selected in `loanRequests.ts`), and `ViewMembers.tsx` (shown in the list and searched).
-- [ ] About 30 screens pass `profile.discord` to the header as `handle`, and `ProfileModal` shows it under the member's name. Replace it with something else (the NetID from `uw_email` is the natural choice) or drop the line.
-- [ ] Drop `discord` from the `Profile` type (`src/types/index.ts`) and from `AuditLog.tsx`'s field labels. The column itself can stay unused, as long as it allows null (see the `profiles` item in Phase 1). The audit trigger's field list in `20260921000000_audit_log.sql` can keep naming it, since it simply never changes.
+- [x] Remove the required "Discord username" field from profile setup (`ProfileSetupPage.tsx`, its form state and validation) and from `ProfileSetupPage.test.tsx`.
+- [x] Remove the Discord rows from the admin screens: `MemberDetail.tsx` (with its copy button), `LoanDetail.tsx` (`memberDiscord`, selected in `loanRequests.ts`), and `ViewMembers.tsx` (shown in the list and searched).
+- [x] About 30 screens pass `profile.discord` to the header as `handle`, and `ProfileModal` shows it under the member's name. The modal already shows the email, so the line was dropped rather than replaced (`UserProfile.handle` is gone).
+- [x] Drop `discord` from the `Profile` type (`src/types/index.ts`) and from `AuditLog.tsx`'s field labels. The column itself can stay unused, as long as it allows null (see the `profiles` item in Phase 1). The audit trigger's field list in `20260921000000_audit_log.sql` can keep naming it, since it simply never changes.
 
 ### Phase 3: room reservations
 
