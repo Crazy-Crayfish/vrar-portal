@@ -1,5 +1,5 @@
 import type { UserProfile } from "../types";
-import { CloseIcon, HandleIcon, MailIcon, PersonIcon, PinIcon } from "./user-dashboard/icons";
+import { CloseIcon, MailIcon, PersonIcon, PinIcon } from "./user-dashboard/icons";
 import styles from "./ProfileModal.module.css";
 import { ModalDialog } from "./ModalDialog";
 
@@ -31,10 +31,6 @@ export function ProfileModal({ user, onClose, onLogOut }: ProfileModalProps) {
           <li>
             <MailIcon className={styles.detailIcon} />
             <span>{user.email}</span>
-          </li>
-          <li>
-            <HandleIcon className={styles.detailIcon} />
-            <span>{user.handle}</span>
           </li>
           <li>
             <PinIcon className={styles.detailIcon} />

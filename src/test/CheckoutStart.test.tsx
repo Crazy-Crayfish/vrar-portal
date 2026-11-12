@@ -54,7 +54,7 @@ beforeEach(() => {
   )
   vi.mocked(useAuth).mockReturnValue({
     session: { user: { id: 'member-1', email: 'bob@uw.edu' } } as unknown as Session,
-    profile: { id: 'member-1', first_name: 'Bob', last_name: 'Reyes', role: 'member', uw_email: 'bob@uw.edu', discord: 'bob', address: '1 Way' },
+    profile: { id: 'member-1', first_name: 'Bob', last_name: 'Reyes', role: 'member', uw_email: 'bob@uw.edu', address: '1 Way' },
     loading: false,
     accountError: false,
     profileFetchError: false,

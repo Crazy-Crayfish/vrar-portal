@@ -21,7 +21,6 @@ const mockProfile = {
   last_name: 'Admin',
   role: 'admin' as const,
   uw_email: 'admin@uw.edu',
-  discord: 'ada#0001',
   address: '123 Way',
 }
 
@@ -59,7 +58,7 @@ const profileEdit = entry({
   action: 'member.profile_updated',
   summary: "Bob Reyes's profile details were updated",
   changes: [
-    { field: 'discord', from: 'bob#2', to: 'bob#22' },
+    { field: 'first_name', from: 'Rob', to: 'Robert' },
     { field: 'phone', hidden: 'pii' },
   ],
 })
@@ -179,8 +178,8 @@ describe('AuditLog', () => {
     await userEvent.click(await screen.findByRole('button', { name: /profile details were updated/ }))
 
     const modal = within(screen.getByRole('dialog'))
-    expect(modal.getByText('bob#2')).toBeInTheDocument()
-    expect(modal.getByText('bob#22')).toBeInTheDocument()
+    expect(modal.getByText('Rob')).toBeInTheDocument()
+    expect(modal.getByText('Robert')).toBeInTheDocument()
     expect(modal.getByText(/values not kept in the log/i)).toBeInTheDocument()
   })
 

@@ -46,7 +46,6 @@ const mockProfile = {
   last_name: 'Admin',
   role: 'admin' as const,
   uw_email: 'admin@uw.edu',
-  discord: 'ada#0001',
   address: '123 Way',
 }
 
@@ -75,7 +74,6 @@ function detail(overrides: Partial<AdminLoanRequestDetail> = {}): AdminLoanReque
     memberId: 'member-1',
     memberName: 'Bob Reyes',
     memberEmail: 'bob@uw.edu',
-    memberDiscord: 'bobreyes#2201',
     reviewerName: null,
     cancelledAt: null,
     cancelledByName: null,

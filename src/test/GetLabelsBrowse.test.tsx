@@ -38,7 +38,6 @@ const mockProfile = {
   last_name: 'Admin',
   role: 'admin' as const,
   uw_email: 'admin@uw.edu',
-  discord: 'ada#0001',
   address: '123 Way',
 }
 

@@ -30,7 +30,6 @@ const adminProfile = {
   last_name: 'Admin',
   role: 'admin' as const,
   uw_email: 'admin@uw.edu',
-  discord: 'ada#0001',
   address: '123 Way',
 }
 
@@ -58,7 +57,6 @@ const detail: AdminLoanRequestDetail = {
   memberId: 'member-1',
   memberName: 'Bob Reyes',
   memberEmail: 'bob@uw.edu',
-  memberDiscord: 'bobreyes',
   reviewerName: 'Ada Admin',
   cancelledAt: null,
   cancelledByName: null,

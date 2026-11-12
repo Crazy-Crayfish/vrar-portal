@@ -476,8 +476,8 @@ export function AuditLogIconFilled({ size = 16, color = "#474747", className }: 
   );
 }
 
-// The "copy this value" affordance next to a member's email, student ID and
-// Discord handle — two overlapping rounded rectangles, the standard copy
+// The "copy this value" affordance next to a member's email and
+// student ID — two overlapping rounded rectangles, the standard copy
 // glyph, outlined rather than filled to sit quietly beside plain text.
 export function CopyIcon({ size = 16, className }: IconProps) {
   return (
