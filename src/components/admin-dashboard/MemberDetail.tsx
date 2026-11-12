@@ -18,7 +18,7 @@ function formatRegistrationDate(iso: string): string {
 interface DetailRowProps {
   label: string
   value: string
-  /** Email, student ID, Discord — fields worth copying rather than retyping. */
+  /** Email and student ID — fields worth copying rather than retyping. */
   copyable?: boolean
 }
 
@@ -27,7 +27,6 @@ const DETAIL_LABELS = [
   'Name',
   'UW Email',
   'Student ID',
-  'Discord',
   'Phone #',
   'Address',
   'Registration date',
@@ -94,7 +93,7 @@ function CopyableValue({ label, value }: { label: string; value: string }) {
  * the loan detail screen — it would only make a legitimate lookup harder.
  *
  * What's worth changing is the default: opening someone's profile to check
- * their Discord handle shouldn't also put their home address on screen, in
+ * their student ID shouldn't also put their home address on screen, in
  * a room, on a shared laptop, over a screen share.
  */
 function AddressRow({ address }: { address: string }) {
@@ -178,7 +177,6 @@ export default function MemberDetail() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])
@@ -289,7 +287,6 @@ export default function MemberDetail() {
               <DetailRow label="Name" value={`${member.first_name} ${member.last_name}`} />
               <DetailRow label="UW Email" value={member.uw_email} copyable />
               <DetailRow label="Student ID" value={member.student_id} copyable />
-              <DetailRow label="Discord" value={member.discord} copyable />
               <DetailRow label="Phone #" value={member.phone} />
               <AddressRow address={member.address} />
               <DetailRow label="Registration date" value={formatRegistrationDate(member.created_at)} />

@@ -12,7 +12,7 @@ One of Synaptech's missions at UW is to increase access to neurotechnology educa
 - **Frontend**: React, TypeScript, Vite, React Router
 - **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions), Resend (automated emails)
 - **Barcode scanning**: zxing-wasm, barcode-detector
-- **PDF & labels**: jsPDF, pdf-lib, html2canvas
+- **PDF**: jsPDF, pdf-lib
 - **Testing & linting**: Vitest, React Testing Library, Oxlint
 - **Deployment & CI**: Cloudflare, GitHub Actions
 
@@ -36,7 +36,6 @@ One of Synaptech's missions at UW is to increase access to neurotechnology educa
   - [Manage all hardware loans](documentation/admin-facing/manage-all-hardware-loans.md)
 - Inventory
   - [Manage inventory (add / edit items)](documentation/admin-facing/manage-inventory.md)
-  - [Get product labels](documentation/admin-facing/get-replacement-label.md)
   - [Run an inventory audit](documentation/admin-facing/run-inventory-audit.md)
 - Email
   - [Manage automated email content](documentation/admin-facing/manage-automated-email-content.md)

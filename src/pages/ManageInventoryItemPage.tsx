@@ -202,7 +202,6 @@ export default function ManageInventoryItemPage() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])
@@ -545,7 +544,7 @@ export default function ManageInventoryItemPage() {
         )}
 
         {!isConsumable && id && (
-          <EquipmentUnitsTable equipmentId={id} productName={productName} onCountChange={handleUnitCountChange} />
+          <EquipmentUnitsTable equipmentId={id} onCountChange={handleUnitCountChange} />
         )}
 
         <div className={formStyles.field}>

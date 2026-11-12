@@ -15,7 +15,6 @@ interface FormState {
   student_id: string
   uw_email: string
   address: string
-  discord: string
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -50,7 +49,6 @@ function validate(form: FormState): FieldErrors {
   }
 
   if (!form.address.trim()) errors.address = 'Home address is required.'
-  if (!form.discord.trim()) errors.discord = 'Discord username is required.'
 
   return errors
 }
@@ -101,7 +99,6 @@ export default function ProfileSetupPage() {
     student_id: '',
     uw_email: session?.user.email ?? '',
     address: '',
-    discord: '',
   })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false)
@@ -145,7 +142,6 @@ export default function ProfileSetupPage() {
         student_id: form.student_id.trim(),
         uw_email: form.uw_email,
         address: form.address.trim(),
-        discord: form.discord.trim(),
       })
       .select()
       .single()
@@ -230,16 +226,6 @@ export default function ProfileSetupPage() {
               onChange={handleChange('address')}
               error={errors.address}
               placeholder="123 Main St, Seattle, WA 98101"
-            />
-          </div>
-
-          <div className={styles.row}>
-            <Field
-              label="Discord username"
-              value={form.discord}
-              onChange={handleChange('discord')}
-              error={errors.discord}
-              placeholder="username"
             />
           </div>
 

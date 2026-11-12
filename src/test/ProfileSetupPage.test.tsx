@@ -60,7 +60,6 @@ describe('ProfileSetupPage — form validation', () => {
     expect(screen.getByText('Phone number is required.')).toBeInTheDocument()
     expect(screen.getByText('UW student ID is required.')).toBeInTheDocument()
     expect(screen.getByText('Home address is required.')).toBeInTheDocument()
-    expect(screen.getByText('Discord username is required.')).toBeInTheDocument()
   })
 
   // A screen-reader user can't see the red text beside a field, so the
@@ -122,7 +121,6 @@ describe('ProfileSetupPage — privacy policy consent', () => {
     await user.type(screen.getByLabelText(/phone number/i), '(206) 555-0000')
     await user.type(screen.getByLabelText(/uw student id/i), '1234567')
     await user.type(screen.getByLabelText(/home address/i), '123 Main St, Seattle, WA 98101')
-    await user.type(screen.getByLabelText(/discord username/i), 'jane')
   }
 
   it('links the privacy policy, opening in a new tab', () => {

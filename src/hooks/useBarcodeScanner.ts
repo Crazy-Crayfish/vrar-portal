@@ -6,11 +6,9 @@ import { useEffect, useRef, useState } from 'react'
 import zxingWasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url'
 import { hapticTick } from '../lib/haptics'
 
-// Only Code 128, which is what our labels print (see lib/code128.ts). The
-// same label also carries two QR codes linking to the item docs and the
-// checkout policy; with QR enabled, whichever code the detector saw first
-// won, so a URL was read as the serial. Manufacturer EAN/Code 39 barcodes on
-// the hardware itself are never our serial either.
+// Only Code 128 for now, as a placeholder: the format of the UW property tags
+// units will carry is not known yet (scan one to find out, then add it here).
+// QR is left off on purpose: a QR code is usually a URL, never a serial.
 const SERIAL_FORMATS = ['code_128']
 
 /**

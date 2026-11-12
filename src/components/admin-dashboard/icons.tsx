@@ -187,17 +187,6 @@ const actionIconPaths: Record<IconKey, ReactElement> = {
     </>
   ),
   add: <path d="M12 5v14M5 12h14" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />,
-  label: (
-    <>
-      <path
-        d="M4 12l7.3-7.3a2 2 0 011.4-.6H18a2 2 0 012 2v5.3a2 2 0 01-.6 1.4L12.1 20a2 2 0 01-2.8 0L4 14.7a2 2 0 010-2.8z"
-        stroke={stroke}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <circle cx="15" cy="9" r="1.4" stroke={stroke} strokeWidth="1.4" />
-    </>
-  ),
   checkout: <path d="M7 17L17 7M7 7h10v10" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />,
   return: <path d="M17 7L7 17M17 17H7V7" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />,
   list: (
@@ -476,8 +465,8 @@ export function AuditLogIconFilled({ size = 16, color = "#474747", className }: 
   );
 }
 
-// The "copy this value" affordance next to a member's email, student ID and
-// Discord handle — two overlapping rounded rectangles, the standard copy
+// The "copy this value" affordance next to a member's email and
+// student ID — two overlapping rounded rectangles, the standard copy
 // glyph, outlined rather than filled to sit quietly beside plain text.
 export function CopyIcon({ size = 16, className }: IconProps) {
   return (

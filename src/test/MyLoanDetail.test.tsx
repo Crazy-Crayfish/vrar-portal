@@ -45,7 +45,6 @@ const memberProfile = {
   last_name: 'Reyes',
   role: 'member' as const,
   uw_email: 'bob@uw.edu',
-  discord: 'bobreyes',
   address: '123 Way',
 }
 

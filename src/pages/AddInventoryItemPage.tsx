@@ -110,7 +110,6 @@ export default function AddInventoryItemPage() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])
@@ -177,18 +176,13 @@ export default function AddInventoryItemPage() {
       }
 
       // Consumables aren't individually serialized, so they don't get
-      // equipment_units or labels — go straight to the done screen.
-      if (isConsumable) {
-        navigate('/adminHome/add-item/done')
-        return
+      // equipment_units.
+      if (!isConsumable) {
+        const serials = generateSerialNumbers(quantity)
+        await createEquipmentUnits(equipment.id, serials)
       }
 
-      const serials = generateSerialNumbers(quantity)
-      await createEquipmentUnits(equipment.id, serials)
-
-      navigate('/adminHome/add-item/labels', {
-        state: { productName: equipment.name, imagePreviewUrl: imageUrl, quantity, serials },
-      })
+      navigate('/adminHome/add-item/done')
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to add inventory item:', error)

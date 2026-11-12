@@ -17,7 +17,6 @@ const memberProfile: Profile = {
   student_id: '1234567',
   uw_email: 'jane@uw.edu',
   address: '123 Main St',
-  discord: 'jane',
   role: 'member',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',

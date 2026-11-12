@@ -21,7 +21,6 @@ const bob: Profile = {
   student_id: '1234567',
   uw_email: 'bob@uw.edu',
   address: '1 Way',
-  discord: 'bob',
   role: 'member',
   created_at: '2026-09-01T00:00:00Z',
   updated_at: '2026-09-01T00:00:00Z',
