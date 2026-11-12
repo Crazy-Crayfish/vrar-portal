@@ -69,11 +69,6 @@
   width: 3rem;
 }
 
-.table th.thLabels {
-  text-align: center;
-  white-space: nowrap;
-}
-
 .tdAction {
   text-align: center;
 }
@@ -83,13 +78,6 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-}
-
-.tdLabels {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1.125rem;
 }
 
 .chip {

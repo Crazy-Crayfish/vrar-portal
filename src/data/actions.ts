@@ -14,7 +14,6 @@ export const actionGroups: ActionGroup[] = [
     items: [
       { id: 'manage-inventory', label: 'Manage hardware inventory', shortLabel: 'Manage inventory', icon: 'inventory', category: 'Inventory' },
       { id: 'add-item',         label: 'Add a new item',             icon: 'add',       category: 'Inventory' },
-      { id: 'get-labels',       label: 'Get hardware labels',        icon: 'label',     category: 'Inventory' },
       { id: 'inventory-audit',  label: 'Inventory audit',            icon: 'audit',     category: 'Inventory' },
     ],
   },

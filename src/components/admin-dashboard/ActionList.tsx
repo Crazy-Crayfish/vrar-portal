@@ -3,7 +3,6 @@ import type { ActionGroup, IconKey } from "../../types";
 import {
   BrowseIconFilled,
   PlusIconSmallFilled,
-  PrinterIconFilled,
   ArrowUpLeftFilled,
   ArrowDownRightFilled,
   ServerIconFilled,
@@ -26,7 +25,6 @@ interface ActionListProps {
 const actionIcons: Record<IconKey, ReactElement> = {
   inventory: <BrowseIconFilled size={22} className={styles.actionRowIcon} />,
   add: <PlusIconSmallFilled size={13} className={styles.actionRowIcon} />,
-  label: <PrinterIconFilled size={21} className={styles.actionRowIcon} />,
   checkout: <ArrowUpLeftFilled size={15} className={styles.actionRowIcon} />,
   return: <ArrowDownRightFilled size={15} className={styles.actionRowIcon} />,
   list: <ServerIconFilled size={17} className={styles.actionRowIcon} />,

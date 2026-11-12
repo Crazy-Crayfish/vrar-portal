@@ -1,17 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import type jsPDF from 'jspdf'
+import { useEffect, useState } from 'react'
 import ConfirmActionModal from '../ConfirmActionModal'
 import { Tooltip } from '../Tooltip'
 import {
-  DownloadIconFilled,
   PauseIconFilled,
   PlayIconFilled,
   PlusIconSmallFilled,
-  PrinterIconFilled,
   StepperSubtractIconFilled,
 } from './icons'
-import { QrDocLabel } from './labels/QrDocLabel'
-import { SerialBarcodeLabel } from './labels/SerialBarcodeLabel'
 import {
   addEquipmentUnit,
   deleteEquipmentUnit,
@@ -22,7 +17,6 @@ import {
   type EquipmentUnitStatus,
   type EquipmentUnitWithStatus,
 } from '../../lib/inventory'
-import { buildItemLabelsPdf, downloadItemLabelsAsPngs, preloadLabelPdfLibs, printLabelsPdf } from '../../lib/labelPdf'
 import type { EquipmentUnit } from '../../types'
 import { Skeleton, SkeletonLabel } from '../skeleton/Skeleton'
 import styles from './EquipmentUnitsTable.module.css'
@@ -41,20 +35,12 @@ const STATUS_LABEL: Record<EquipmentUnitStatus, string> = {
   checked_out: 'checked out',
 }
 
-function slugify(value: string): string {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'item'
-}
-
 interface EquipmentUnitsTableProps {
   equipmentId: string
-  productName: string
   onCountChange?: (count: number) => void
 }
 
-export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }: EquipmentUnitsTableProps) {
-  // Fetch the PDF library now, not when the button is pressed.
-  useEffect(preloadLabelPdfLibs, [])
-
+export function EquipmentUnitsTable({ equipmentId, onCountChange }: EquipmentUnitsTableProps) {
   const [rows, setRows] = useState<EquipmentUnitWithStatus[]>([])
   const [isLoading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -66,13 +52,8 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
   const [isDeleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const [pendingAction, setPendingAction] = useState<string | null>(null)
-
   const [holdingUnitId, setHoldingUnitId] = useState<string | null>(null)
   const [holdError, setHoldError] = useState<string | null>(null)
-
-  const docLabelRefs = useRef(new Map<string, HTMLDivElement>())
-  const barcodeLabelRefs = useRef(new Map<string, HTMLDivElement>())
 
   useEffect(() => {
     let cancelled = false
@@ -170,47 +151,6 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
     }
   }
 
-  async function withPdf(unitId: string, actionKey: string, run: (pdf: jsPDF) => void) {
-    const docEl = docLabelRefs.current.get(unitId)
-    const barcodeEl = barcodeLabelRefs.current.get(unitId)
-    if (!docEl || !barcodeEl || pendingAction) return
-
-    setPendingAction(actionKey)
-    try {
-      const pdf = await buildItemLabelsPdf(docEl, barcodeEl)
-      run(pdf)
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to generate unit label PDF:', error)
-    } finally {
-      setPendingAction(null)
-    }
-  }
-
-  function handlePrint(unit: EquipmentUnit) {
-    void withPdf(unit.id, `print-${unit.id}`, (pdf) => printLabelsPdf(pdf))
-  }
-
-  async function handleDownload(unit: EquipmentUnit) {
-    const docEl = docLabelRefs.current.get(unit.id)
-    const barcodeEl = barcodeLabelRefs.current.get(unit.id)
-    if (!docEl || !barcodeEl || pendingAction) return
-
-    const base = `${slugify(productName)}-${unit.serial_number}`
-    setPendingAction(`download-${unit.id}`)
-    try {
-      await downloadItemLabelsAsPngs(docEl, barcodeEl, {
-        doc: `${base}-qr-label.png`,
-        barcode: `${base}-barcode-label.png`,
-      })
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to download separate label PNGs:', error)
-    } finally {
-      setPendingAction(null)
-    }
-  }
-
   return (
     <div className={styles.section}>
       <span className={styles.sectionLabel}>Individual units in inventory</span>
@@ -224,7 +164,6 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
                 <tr>
                   <th className={styles.thSerial}>Serial number</th>
                   <th className={styles.thStatus}>Status</th>
-                  <th className={styles.thLabels}>Labels</th>
                   <th className={styles.thAction} aria-hidden="true" />
                 </tr>
               </thead>
@@ -239,10 +178,6 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
                         <Skeleton width="1.75rem" height="1.75rem" radius="0.5rem" />
                         <Skeleton width="6rem" height="1.75rem" shape="pill" />
                       </div>
-                    </td>
-                    <td className={styles.tdLabels}>
-                      <Skeleton width="2rem" height="2rem" radius="0.5rem" />
-                      <Skeleton width="2rem" height="2rem" radius="0.5rem" />
                     </td>
                     <td className={styles.tdAction}>
                       <Skeleton width="2rem" height="2rem" radius="0.5rem" />
@@ -265,7 +200,6 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
                   <tr>
                     <th className={styles.thSerial}>Serial number</th>
                     <th className={styles.thStatus}>Status</th>
-                    <th className={styles.thLabels}>Labels</th>
                     <th className={styles.thAction} aria-hidden="true" />
                   </tr>
                 </thead>
@@ -306,30 +240,6 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
                           <span className={`${styles.chip} ${STATUS_CHIP_CLASS[status]}`}>{STATUS_LABEL[status]}</span>
                         </div>
                       </td>
-                      <td className={styles.tdLabels}>
-                        <Tooltip text="Print labels on PDF">
-                          <button
-                            type="button"
-                            className={styles.actionButton}
-                            aria-label={`Print label for ${unit.serial_number}`}
-                            onClick={() => handlePrint(unit)}
-                            disabled={pendingAction !== null}
-                          >
-                            <PrinterIconFilled size={19} />
-                          </button>
-                        </Tooltip>
-                        <Tooltip text="Download label PNGs">
-                          <button
-                            type="button"
-                            className={styles.actionButton}
-                            aria-label={`Download label for ${unit.serial_number}`}
-                            onClick={() => void handleDownload(unit)}
-                            disabled={pendingAction !== null}
-                          >
-                            <DownloadIconFilled size={17} />
-                          </button>
-                        </Tooltip>
-                      </td>
                       <td className={styles.tdAction}>
                         <button
                           type="button"
@@ -362,28 +272,6 @@ export function EquipmentUnitsTable({ equipmentId, productName, onCountChange }:
             </div>
           </>
         )}
-      </div>
-
-      {/* Off-screen — rendered so html2canvas can rasterize real label markup into the PDF. */}
-      <div style={{ position: 'fixed', top: 0, left: '-99999px', pointerEvents: 'none' }} aria-hidden="true">
-        {rows.map(({ unit }) => (
-          <div key={unit.id}>
-            <div
-              ref={(el) => {
-                if (el) docLabelRefs.current.set(unit.id, el)
-              }}
-            >
-              <QrDocLabel productName={productName} />
-            </div>
-            <div
-              ref={(el) => {
-                if (el) barcodeLabelRefs.current.set(unit.id, el)
-              }}
-            >
-              <SerialBarcodeLabel serial={unit.serial_number} />
-            </div>
-          </div>
-        ))}
       </div>
 
       <ConfirmActionModal
