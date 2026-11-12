@@ -104,10 +104,6 @@ export default function AdminHomePage() {
       navigate('/adminHome/members')
       return
     }
-    if (actionId === 'get-labels') {
-      navigate('/adminHome/get-labels')
-      return
-    }
     if (actionId === 'inventory-audit') {
       navigate('/adminHome/inventory/audit')
       return

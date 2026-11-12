@@ -16,7 +16,6 @@ export interface UserProfile {
 export type IconKey =
   | "inventory"
   | "add"
-  | "label"
   | "checkout"
   | "return"
   | "list"
