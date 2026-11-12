@@ -24,6 +24,35 @@ Since the snapshot below: both Vault secrets exist; `.env.local` is set up on th
 
 Security advisor, 2026-11-12: `record_inventory_audit` is executable by signed-out users through `/rest/v1/rpc`. Not yet checked whether its body rejects non-admins; look at it and, if it doesn't, revoke `anon` in a new migration. `rls_auto_enable` is a Supabase-created helper and is flagged the same way. Leaked-password protection is off, which only matters if password sign-in is ever turned on.
 
+#### Handoff to the next agent (2026-11-12)
+
+**Open draft PRs, and the order to merge them.** None touches `supabase/`, so merging deploys nothing.
+1. #9 Remove label making. Independent.
+2. #10 Remove Discord. Independent. Drops the header `handle` line instead of showing the NetID (the profile modal already shows the email); reversible if the user prefers the NetID.
+3. #11 Lookups stop assuming `SYN-`. Independent of #9 and #10.
+4. #12 Scan UW tags when adding units. **Stacked on #11** (its base is #11's branch); merge #11 first.
+
+All four edit AGENTS.md near each other, so expect small merge conflicts; resolve by keeping every PR's checklist ticks. #9 and #12 both touch `EquipmentUnitsTable` and `AddInventoryItemPage`; after #9 merges, the `navigate('/adminHome/add-item/labels', …)` line in #12 must become `navigate('/adminHome/add-item/done')` (#9 already does this), and the unused `serials` state it passed goes away.
+
+**Decisions the user has made.** Scan-first tag entry is approved *as a preliminary choice from web research only* (see [UW tag research](#uw-tag-research-unverified)). Placeholder logic for the UW barcode is fine until a real tag is available. The user asked to be paused on any key design point they haven't approved.
+
+**Still open, and the user has no answers yet:** (1) does every unit carry a UW tag; (2) what a real tag looks like (symbology, digit count). Also still waiting: the `org.ts` links and policies, logo and welcome copy, contract wording, category list, and whether room bookings include equipment.
+
+**Work that needs no outside input**, none started:
+- OAuth finish-up (a fresh agent was about to take this): the real origin in the Google client, the Auth Site URL and Redirect URLs, **Publish app**. All wait on a deployed Worker. The connector can't read Auth settings or the Google console, so the user does those by hand.
+- Check `record_inventory_audit` for a missing admin check (see the advisor note above) and, if needed, revoke `anon` in a new migration.
+- Schedule `send-scheduled-reminders` daily (needs `verify_jwt = false` and the secret-key check; no email will arrive until delivery is sorted).
+- Phase 2 items that don't need input: the training tick-box and `training_confirmed_at`, AirTag at hand-off, suggested projects. Each is a new migration, so each needs a user-approved design first.
+- Phase 3 (room reservations): design before building.
+
+**Gotchas learned this session.**
+- Background sessions must `EnterWorktree` before editing; the shell then refuses `cd` into the main checkout and compound commands it can't verify. Use plain separate commands, and write scripts with the Write tool instead of heredocs when a command is refused.
+- Files in this repo are mostly CRLF. Scripted edits must preserve line endings (read with `newline=''`, normalise for matching, write back with the original ending).
+- Tests need `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set to any value. The full suite occasionally times out two unrelated tests under load; rerun them alone before suspecting a regression.
+- `CLAUDE.md` is not tracked by git (only `AGENTS.md` is); its "Handoff" section is stale, so treat this file as canonical.
+- `.env.local` exists in the main checkout (publishable key only, gitignored). A `npm run dev` was started in the background against it and may still be running on port 5173.
+- The Supabase connector cannot set Edge Function secrets, and `apply_migration` stamps the current time as the version, so don't use it for repo migrations.
+
 ### Current status (2026-11-05)
 
 A snapshot for whoever picks this up next; the checklist below is the detailed record. Recheck the live facts with the Supabase connector (project ref `ctrwrzbckugapdvhaaez`) before acting on them.
