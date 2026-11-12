@@ -1,12 +1,11 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
-import { SERIAL_PREFIX, SERIAL_SUFFIX_LENGTH } from '../../../lib/serialNumber'
 import modalStyles from '../../Modal.module.css'
 import styles from './HardwareFlow.module.css'
 import { ModalDialog } from '../../ModalDialog'
 
-/** Masked, and the length of a real suffix — never an actual serial from the
-    inventory, which reads as a value to keep rather than an example. */
-const SERIAL_PLACEHOLDER = 'X'.repeat(SERIAL_SUFFIX_LENGTH)
+/** Never an actual serial from the inventory, which reads as a value to keep
+    rather than an example. */
+const SERIAL_PLACEHOLDER = 'Tag number'
 
 interface SerialEntryModalProps {
   isOpen: boolean
@@ -71,15 +70,12 @@ export function SerialEntryModal({
 
         <div className={modalStyles.bodyGroup}>
           <p className={modalStyles.body}>
-            Type the serial number printed under the barcode on the unit you are handing over.
+            Type the number on the UW tag of the unit you are handing over.
           </p>
         </div>
 
         <div className={styles.dialogBody}>
           <div className={styles.dialogField}>
-            <span className={styles.dialogPrefix} aria-hidden="true">
-              {SERIAL_PREFIX.replace('-', ' -')}
-            </span>
             <input
               ref={inputRef}
               className={styles.dialogInput}

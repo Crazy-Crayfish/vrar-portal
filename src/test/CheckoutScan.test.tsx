@@ -183,13 +183,12 @@ describe('CheckoutScan', () => {
     expect(screen.queryByText('Loan agreement sign off')).not.toBeInTheDocument()
   })
 
-  // Labels are printed with the SYN- prefix but some scanners hand back only
-  // the payload, so the lookup normalises both sides.
-  it('accepts a barcode that omits the SYN- prefix', async () => {
+  // The lookup is case-insensitive and ignores stray whitespace.
+  it('accepts a barcode in lower case', async () => {
     renderCheckout()
     await screen.findByText(/please scan the hardware item barcode/i)
 
-    detectBarcode?.('hjxpp41t5')
+    detectBarcode?.(' syn-hjxpp41t5 ')
 
     expect(await screen.findByText('Muse 2', {}, { timeout: 3000 })).toBeInTheDocument()
   })
@@ -276,7 +275,7 @@ describe('CheckoutScan', () => {
     renderCheckout()
     await openSerialDialog()
 
-    await userEvent.type(screen.getByLabelText('Serial number'), 'HJXPP41T5')
+    await userEvent.type(screen.getByLabelText('Serial number'), 'SYN-HJXPP41T5')
     await userEvent.click(screen.getByRole('button', { name: 'Find loan' }))
 
     expect(await screen.findByText('Muse 2')).toBeInTheDocument()
@@ -289,7 +288,7 @@ describe('CheckoutScan', () => {
     renderCheckout()
     await openSerialDialog()
 
-    await userEvent.type(screen.getByLabelText('Serial number'), 'HJXPP41T5{Enter}')
+    await userEvent.type(screen.getByLabelText('Serial number'), 'SYN-HJXPP41T5{Enter}')
 
     expect(await screen.findByText('Muse 2')).toBeInTheDocument()
   })
@@ -306,16 +305,16 @@ describe('CheckoutScan', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /enter a serial number/i })
     expect(
-      within(dialog).getByText('SYN-NOTOURS99 is not recognised in inventory'),
+      within(dialog).getByText('NOTOURS99 is not recognised in inventory'),
     ).toBeInTheDocument()
     expect(screen.queryByText('Handing to')).not.toBeInTheDocument()
   })
 
-  it('hints at the shape of a serial without showing a real one', async () => {
+  it('hints at what to type without showing a real serial', async () => {
     renderCheckout()
     await openSerialDialog()
 
-    expect(screen.getByLabelText('Serial number')).toHaveAttribute('placeholder', 'XXXXXXXXX')
+    expect(screen.getByLabelText('Serial number')).toHaveAttribute('placeholder', 'Tag number')
   })
 
   it('drops what was typed when the dialog is cancelled', async () => {

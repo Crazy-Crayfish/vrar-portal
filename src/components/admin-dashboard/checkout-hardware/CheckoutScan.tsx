@@ -11,7 +11,7 @@ import {
   matchCheckoutSerial,
   type AdminLoanRequestItemSummary,
 } from '../../../lib/loanRequests'
-import { normalizeSerialNumber, SERIAL_PREFIX } from '../../../lib/serialNumber'
+import { normalizeSerialNumber } from '../../../lib/serialNumber'
 import styles from '../hardware-flow/HardwareFlow.module.css'
 
 /**
@@ -129,7 +129,7 @@ export default function CheckoutScan() {
     if (feedback || confirmed || isResolving) return
 
     const serial = normalizeSerialNumber(rawValue)
-    if (!serial || serial === SERIAL_PREFIX) return
+    if (!serial) return
 
     let loans: AdminLoanRequestItemSummary[]
     setResolving(true)

@@ -132,10 +132,12 @@ select
 ### Phase 2: equipment
 
 **UW barcodes instead of `SYN-` serials**
-- [ ] `normalizeSerialNumber` stops adding the `SYN-` prefix and only trims and uppercases. Remove the `SERIAL_PREFIX` checks in `CheckoutScan`, `ReturnScan`, `InventoryAuditScan` and `SerialEntryModal`.
+- [x] `normalizeSerialNumber` stops adding the `SYN-` prefix and only trims and uppercases. The `SERIAL_PREFIX` checks and the printed `SYN -` prefix are gone from `CheckoutScan`, `ReturnScan`, `InventoryAuditScan` and `SerialEntryModal`.
 - [ ] Admins type or scan the UW tag number when adding a unit (`inventory.ts:164`), instead of `generateSerialNumbers` making one up.
 - [ ] `useBarcodeScanner` reads only `code_128`. Add the UW tags' format to `SERIAL_FORMATS` (*needs input*: scan a tag to find out which it is).
-- [ ] Update `serialNumber.test.ts` and the scan tests that use `SYN-` serials.
+- [x] `serialNumber.test.ts` and the scan tests no longer expect a prefix to be added. Fixtures still use `SYN-` strings, which are just opaque serials now.
+
+*Placeholder in place:* `useBarcodeScanner` still reads only Code 128, and `generateSerialNumbers` still makes `SYN-` serials for new units. Both stay until the entry flow above is designed and the tag format is known.
 
 **New equipment contract** (*needs input: the wording*). The signing system stays as it is.
 - [ ] Replace the text in `src/lib/loanAgreementContent.ts` (title, intro, sections 3–8, the signing disclaimer). Both `AgreementPreview` and `loanAgreementPdf.ts` read it.

@@ -699,12 +699,6 @@
   border-color: var(--welcome-blue);
 }
 
-.serialPrefix {
-  font-family: 'Rubik', sans-serif;
-  font-size: 1.0625rem;
-  color: rgba(0, 0, 0, 0.6);
-}
-
 .serialInput {
   flex: 1;
   min-width: 0;

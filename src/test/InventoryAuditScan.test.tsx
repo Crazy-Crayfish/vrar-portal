@@ -131,13 +131,12 @@ describe('InventoryAuditScan', () => {
     expect(within(screen.getByRole('list')).queryByText('Muse 2')).not.toBeInTheDocument()
   })
 
-  it('accepts a barcode without the SYN- prefix', async () => {
+  it('accepts a barcode in lower case', async () => {
     renderScan()
     await screen.findByText('0 of 2 confirmed in stock')
 
-    // What a reader returns for a Code 128 label varies; normalising is what
-    // keeps "AAA111AAA" matching "SYN-AAA111AAA".
-    detectBarcode?.('aaa111aaa')
+    // Normalising is what keeps "syn-aaa111aaa" matching "SYN-AAA111AAA".
+    detectBarcode?.('syn-aaa111aaa')
 
     expect(await screen.findByText('1 of 2 confirmed in stock')).toBeInTheDocument()
   })
@@ -185,7 +184,7 @@ describe('InventoryAuditScan', () => {
     renderScan()
     await screen.findByText('0 of 2 confirmed in stock')
 
-    await userEvent.type(screen.getByLabelText('Serial number'), 'BBB222BBB')
+    await userEvent.type(screen.getByLabelText('Serial number'), 'SYN-BBB222BBB')
     await userEvent.click(screen.getByRole('button', { name: 'Count it' }))
 
     expect(await screen.findByText('1 of 2 confirmed in stock')).toBeInTheDocument()

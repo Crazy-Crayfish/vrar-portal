@@ -327,16 +327,6 @@
   border-color: var(--welcome-blue);
 }
 
-/* The SYN- prefix is printed, not typed: it's on every label and identical
-   every time, so typing it is four keystrokes of nothing. */
-.dialogPrefix {
-  flex-shrink: 0;
-  font-family: 'Rubik', sans-serif;
-  font-size: 1.125rem;
-  color: rgba(0, 0, 0, 0.6);
-  letter-spacing: 0.04em;
-}
-
 .dialogInput {
   flex: 1;
   min-width: 0;
