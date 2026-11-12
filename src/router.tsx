@@ -54,10 +54,6 @@ const adminChunks = {
   inventoryAudit: () => import('./pages/AdminInventoryAuditPage'),
   inventoryAuditScan: () => import('./pages/AdminInventoryAuditScanPage'),
   inventoryAuditReport: () => import('./pages/AdminInventoryAuditReportPage'),
-  addItemLabels: () => import('./pages/AddInventoryItemLabelsPage'),
-  replacementLabel: () => import('./pages/GetReplacementLabelPage'),
-  labelsBrowse: () => import('./pages/GetLabelsBrowsePage'),
-  labelsProduct: () => import('./pages/GetLabelsProductPage'),
   editEmailTemplate: () => import('./pages/AdminEditEmailTemplatePage'),
   checkoutAgreement: () => import('./pages/AdminCheckoutAgreementPage'),
 }
@@ -68,10 +64,6 @@ const AdminAuditLogPage = lazy(adminChunks.auditLog)
 const AdminInventoryAuditPage = lazy(adminChunks.inventoryAudit)
 const AdminInventoryAuditScanPage = lazy(adminChunks.inventoryAuditScan)
 const AdminInventoryAuditReportPage = lazy(adminChunks.inventoryAuditReport)
-const AddInventoryItemLabelsPage = lazy(adminChunks.addItemLabels)
-const GetReplacementLabelPage = lazy(adminChunks.replacementLabel)
-const GetLabelsBrowsePage = lazy(adminChunks.labelsBrowse)
-const GetLabelsProductPage = lazy(adminChunks.labelsProduct)
 const AdminEditEmailTemplatePage = lazy(adminChunks.editEmailTemplate)
 const AdminCheckoutAgreementPage = lazy(adminChunks.checkoutAgreement)
 
@@ -196,11 +188,7 @@ export const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/adminHome/inventory/audit/:id', 'Inventory audit report'],
   ['/adminHome/inventory/:id', 'Inventory item'],
   ['/adminHome/add-item', 'Add inventory item'],
-  ['/adminHome/add-item/labels', 'Add inventory item: labels'],
   ['/adminHome/add-item/done', 'Add inventory item: done'],
-  ['/adminHome/get-labels', 'Get labels'],
-  ['/adminHome/get-labels/browse', 'Get labels: browse'],
-  ['/adminHome/get-labels/browse/:id', 'Get labels: item'],
   ['/adminHome/emails/user', 'Member emails'],
   ['/adminHome/emails/admin', 'Admin emails'],
   ['/adminHome/emails/log', 'Email log'],
@@ -263,11 +251,7 @@ export function AppRouter() {
             <Route path="/adminHome/inventory/:id" element={<AdminRoute><ManageInventoryItemPage /></AdminRoute>} />
             <Route path="/adminHome/members/:id" element={<AdminRoute><AdminMemberDetailPage /></AdminRoute>} />
             <Route path="/adminHome/add-item" element={<AdminRoute><AddInventoryItemPage /></AdminRoute>} />
-            <Route path="/adminHome/add-item/labels" element={<AdminRoute><AddInventoryItemLabelsPage /></AdminRoute>} />
             <Route path="/adminHome/add-item/done" element={<AdminRoute><AddInventoryItemDonePage /></AdminRoute>} />
-            <Route path="/adminHome/get-labels" element={<AdminRoute><GetReplacementLabelPage /></AdminRoute>} />
-            <Route path="/adminHome/get-labels/browse" element={<AdminRoute><GetLabelsBrowsePage /></AdminRoute>} />
-            <Route path="/adminHome/get-labels/browse/:id" element={<AdminRoute><GetLabelsProductPage /></AdminRoute>} />
             <Route path="/adminHome/emails/user" element={<AdminRoute><AdminManageUserEmailsPage /></AdminRoute>} />
             <Route path="/adminHome/emails/admin" element={<AdminRoute><AdminManageAdminEmailsPage /></AdminRoute>} />
             <Route path="/adminHome/emails/log" element={<AdminRoute><AdminEmailLogPage /></AdminRoute>} />

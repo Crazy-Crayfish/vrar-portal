@@ -22,16 +22,6 @@ vi.mock('../lib/inventory', async () => {
   }
 })
 
-vi.mock('../lib/labelPdf', () => ({
-  buildItemLabelsPdf: vi.fn(),
-  downloadItemLabelsAsPngs: vi.fn(),
-  printLabelsPdf: vi.fn(),
-  preloadLabelPdfLibs: vi.fn(),
-}))
-
-vi.mock('../components/admin-dashboard/labels/QrDocLabel', () => ({ QrDocLabel: () => null }))
-vi.mock('../components/admin-dashboard/labels/SerialBarcodeLabel', () => ({ SerialBarcodeLabel: () => null }))
-
 function unit(id: string, serial: string, overrides: Partial<EquipmentUnit> = {}): EquipmentUnit {
   return {
     id,
@@ -65,7 +55,7 @@ beforeEach(() => {
 
 describe('EquipmentUnitsTable — putting units on hold', () => {
   it('shows a held unit as on hold, and offers holding only a free one', async () => {
-    render(<EquipmentUnitsTable equipmentId="eq-1" productName="Muse 2" />)
+    render(<EquipmentUnitsTable equipmentId="eq-1" />)
 
     expect(await screen.findByText('on hold')).toBeInTheDocument()
     expect(within(rowFor('SYN-AAA111')).getByRole('button', { name: 'Put SYN-AAA111 on hold' })).toBeEnabled()
@@ -79,7 +69,7 @@ describe('EquipmentUnitsTable — putting units on hold', () => {
       .mockResolvedValueOnce({ ...free, on_hold_at: '2026-10-02T00:00:00Z' })
       .mockResolvedValueOnce(free)
 
-    render(<EquipmentUnitsTable equipmentId="eq-1" productName="Muse 2" />)
+    render(<EquipmentUnitsTable equipmentId="eq-1" />)
     await userEvent.click(await screen.findByRole('button', { name: 'Put SYN-AAA111 on hold' }))
 
     expect(setEquipmentUnitOnHold).toHaveBeenCalledWith('u-1', true)
@@ -97,7 +87,7 @@ describe('EquipmentUnitsTable — putting units on hold', () => {
       .mockResolvedValueOnce(rows)
       .mockResolvedValueOnce([{ unit: free, status: 'requested' }, rows[1], rows[2]])
 
-    render(<EquipmentUnitsTable equipmentId="eq-1" productName="Muse 2" />)
+    render(<EquipmentUnitsTable equipmentId="eq-1" />)
     await userEvent.click(await screen.findByRole('button', { name: 'Put SYN-AAA111 on hold' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/just requested this unit.*SYN-AAA111/)

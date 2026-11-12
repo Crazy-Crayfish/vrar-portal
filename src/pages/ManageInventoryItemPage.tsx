@@ -545,7 +545,7 @@ export default function ManageInventoryItemPage() {
         )}
 
         {!isConsumable && id && (
-          <EquipmentUnitsTable equipmentId={id} productName={productName} onCountChange={handleUnitCountChange} />
+          <EquipmentUnitsTable equipmentId={id} onCountChange={handleUnitCountChange} />
         )}
 
         <div className={formStyles.field}>
