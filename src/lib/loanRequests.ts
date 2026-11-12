@@ -258,8 +258,6 @@ export interface AdminLoanRequestDetail {
   memberId: string
   memberName: string
   memberEmail: string
-  /** For the "reach out on Discord or email" step of the checkout process. */
-  memberDiscord: string | null
   reviewerName: string | null
   /** Set when the request was cancelled — by the member or by an admin. */
   cancelledAt: string | null
@@ -303,7 +301,7 @@ export async function fetchLoanRequestItemDetail(itemId: string): Promise<AdminL
     const [memberResult, reviewerResult, cancellerResult] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, first_name, last_name, uw_email, discord')
+        .select('id, first_name, last_name, uw_email')
         .eq('id', request.user_id)
         .single(),
       request.reviewed_by
@@ -406,7 +404,6 @@ export async function fetchLoanRequestItemDetail(itemId: string): Promise<AdminL
     memberId: member.id,
     memberName: `${member.first_name} ${member.last_name}`,
     memberEmail: member.uw_email,
-    memberDiscord: member.discord,
     reviewerName,
     cancelledAt: request.cancelled_at,
     cancelledByName,

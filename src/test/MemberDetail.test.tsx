@@ -33,7 +33,6 @@ const adminProfile = {
   last_name: 'Admin',
   role: 'admin' as const,
   uw_email: 'admin@uw.edu',
-  discord: 'ada#0001',
   address: '123 Way',
 }
 
@@ -47,7 +46,6 @@ const member = {
   student_id: '2422605',
   uw_email: 'bob@uw.edu',
   address: HOME_ADDRESS,
-  discord: 'bobreyes',
   role: 'member' as const,
   created_at: '2026-08-16T12:00:00Z',
   updated_at: '2026-08-16T12:00:00Z',
@@ -78,7 +76,7 @@ function renderMemberDetail() {
 }
 
 describe('MemberDetail — the home address', () => {
-  // Opening someone's profile to check their Discord handle shouldn't also
+  // Opening someone's profile to check their student ID shouldn't also
   // put their home address on screen in a shared room or a screen share.
   it('is not on screen when the profile first loads', async () => {
     renderMemberDetail()

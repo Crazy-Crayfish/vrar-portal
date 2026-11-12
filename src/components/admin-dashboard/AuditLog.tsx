@@ -99,7 +99,6 @@ const FIELD_LABEL: Record<string, string> = {
   first_name: 'First name',
   last_name: 'Last name',
   uw_email: 'UW email',
-  discord: 'Discord',
   phone: 'Phone number',
   student_id: 'Student ID',
   address: 'Address',
@@ -353,7 +352,6 @@ export default function AuditLog() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])

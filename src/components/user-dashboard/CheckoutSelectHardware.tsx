@@ -25,7 +25,6 @@ export default function CheckoutSelectHardware() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])

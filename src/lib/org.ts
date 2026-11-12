@@ -14,7 +14,7 @@ export const APP_NAME = 'VR/AR Committee Portal'
 /** The organisation that owns the hardware, as it reads in running text. */
 export const ORG_NAME = 'VR/AR Committee'
 
-/** "Get help & support": the committee's Discord invite, or wherever members
+/** "Get help & support": a chat invite, a form, or wherever members
     should ask for help. */
 export const HELP_AND_SUPPORT_URL: string | null = null
 

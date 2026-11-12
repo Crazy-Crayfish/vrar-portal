@@ -148,7 +148,6 @@ export default function LoanDetail() {
       name: `${profile.first_name} ${profile.last_name}`,
       role: profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email: profile.uw_email,
-      handle: profile.discord,
       location: profile.address,
     }
   }, [profile])
@@ -368,10 +367,6 @@ export default function LoanDetail() {
                 <span className={styles.rowValueLink}>{detail.memberName}</span>
               </button>
 
-              {/* Hand-offs get arranged over Discord as often as by email, so
-                  the handle belongs next to the address rather than one screen
-                  away on the member's profile. */}
-              {detail.memberDiscord && <DetailRow label="Discord" value={detail.memberDiscord} />}
               <DetailRow label="Requested" value={formatDate(detail.requestedAt)} />
               {detail.returnDate && <DetailRow label="Return date" value={formatCalendarDate(detail.returnDate)} />}
               {detail.reviewedAt && <DetailRow label="Checked out" value={formatDate(detail.reviewedAt)} />}

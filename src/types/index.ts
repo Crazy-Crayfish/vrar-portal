@@ -6,7 +6,6 @@ export interface Profile {
   student_id: string
   uw_email: string
   address: string
-  discord: string
   role: 'member' | 'admin'
   created_at: string
   updated_at: string

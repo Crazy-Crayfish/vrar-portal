@@ -47,7 +47,6 @@ const adminProfile = {
   last_name: 'Admin',
   role: 'admin' as const,
   uw_email: 'admin@uw.edu',
-  discord: 'ada#0001',
   address: '123 Way',
 }
 
@@ -75,7 +74,6 @@ const loan: AdminLoanRequestDetail = {
   memberId: 'member-1',
   memberName: 'Bob Reyes',
   memberEmail: 'bob@uw.edu',
-  memberDiscord: 'bobreyes',
   reviewerName: null,
   cancelledAt: null,
   cancelledByName: null,
@@ -91,7 +89,6 @@ const member = {
   student_id: '2422605',
   uw_email: 'bob@uw.edu',
   address: '4218 University Way NE',
-  discord: 'bobreyes',
   role: 'member' as const,
   created_at: '2026-08-16T12:00:00Z',
   updated_at: '2026-08-16T12:00:00Z',

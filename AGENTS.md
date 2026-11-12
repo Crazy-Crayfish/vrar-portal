@@ -26,13 +26,9 @@ Security advisor, 2026-11-12: `record_inventory_audit` is executable by signed-o
 
 #### Handoff to the next agent (2026-11-12)
 
-**Open draft PRs, and the order to merge them.** None touches `supabase/`, so merging deploys nothing.
-1. #9 Remove label making. Independent.
-2. #10 Remove Discord. Independent. Drops the header `handle` line instead of showing the NetID (the profile modal already shows the email); reversible if the user prefers the NetID.
-3. #11 Lookups stop assuming `SYN-`. Independent of #9 and #10.
-4. #12 Scan UW tags when adding units. **Stacked on #11** (its base is #11's branch); merge #11 first.
+**Merged on 2026-11-12:** #9 (remove label making), #10 (remove Discord) and #11 (lookups stop assuming `SYN-`), each as a merge commit. #12 (scan-first UW tag entry, retargeted to `main`) merges after this; its conflicts with #9 were resolved on its branch. None of them touches `supabase/`, so no deploy ran.
 
-All four edit AGENTS.md near each other, so expect small merge conflicts; resolve by keeping every PR's checklist ticks. #9 and #12 both touch `EquipmentUnitsTable` and `AddInventoryItemPage`; after #9 merges, the `navigate('/adminHome/add-item/labels', …)` line in #12 must become `navigate('/adminHome/add-item/done')` (#9 already does this), and the unused `serials` state it passed goes away.
+**Test flake to know about.** Two `ReturnAvailability` tests (and sometimes `EditAvailabilityModal`) exceed Vitest's 5s default in a full run and pass when run alone. They are not related to these PRs; consider raising their timeout or lightening the availability grid in tests.
 
 **Decisions the user has made.** Scan-first tag entry is approved *as a preliminary choice from web research only* (see [UW tag research](#uw-tag-research-unverified)). Placeholder logic for the UW barcode is fine until a real tag is available. The user asked to be paused on any key design point they haven't approved.
 
@@ -96,8 +92,8 @@ select
 1. Once `auth.users`/`profiles` has the user's row, promote them via the connector: `update public.profiles set role = 'admin' where uw_email = '<their uw email>';`. The role guard allows this because the connector runs with no signed-in user. Confirm the email with the user first, and recheck afterwards.
 2. After the Vault secrets exist, check that the profile-created email was *attempted*: there should be a row in `email_log`. It will be `failed` with a Resend test-mode error. That's expected, and it proves the trigger → `pg_net` → `send-email` path works.
 3. Work that needs no input from the committee, as separate PRs, each run through `npm run test:run` and `npm run build`. Offer them, and start whichever the user picks:
-   - **Remove label making** (Phase 1). It was offered before and isn't started.
-   - **Remove Discord** (Phase 2).
+   - ~~Remove label making~~ (Phase 1): done, see the checklist.
+   - ~~Remove Discord~~ (Phase 2): done, see the checklist.
    - **Schedule `send-scheduled-reminders` daily:** a `pg_cron` + `pg_net` migration using the same Vault secrets, plus `verify_jwt = false` and the secret-key check in the function, as `send-email` has. It can merge now, but no reminder will be delivered until email delivery is sorted.
    - **Training confirmation** and **AirTag at hand-off**: new columns via new migrations, plus UI.
 4. Raise [email delivery](#email-delivery-without-a-domain) with the user as a decision, and don't build a Gmail SMTP sender until they agree to it.
@@ -117,7 +113,7 @@ select
 - [x] The browser tab title comes from `APP_NAME`.
 
 **Values for `src/lib/org.ts`** (*needs input*)
-- [ ] `HELP_AND_SUPPORT_URL`: the committee's Discord invite, or wherever members ask for help.
+- [ ] `HELP_AND_SUPPORT_URL`: a chat invite, a form, or wherever members ask for help.
 - [ ] `DOCUMENTATION_URL`: general site documentation, shown as "View documentation" on the member home page.
 - [ ] `PRIVACY_POLICY` and `USAGE_POLICY`: the committee's bylaws and terms, with their titles. Agreeing to them stays **not stored**, deliberately.
 - [x] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox, `arvrcommittee@gmail.com` (it replaces Synaptech's `synaptechuw@gmail.com`). The same value is in the `EMAIL_ARCHIVE_CC` secret; change both together.
@@ -158,11 +154,11 @@ select
 - [ ] The README (description, screenshot, logo), `documentation/` and the screenshots in `public/docs/`. Update each one as the screen it describes changes.
 
 **Remove label making.** Units carry UW-issued barcodes, so the app no longer prints its own labels.
-- [ ] Remove the add-item labels step, the replacement-label page and the get-labels browse/product pages, with their routes and `ROUTE_TITLES` entries.
-- [ ] Remove `components/admin-dashboard/labels/`, `src/lib/labelPdf.ts`, `src/lib/code128.ts`, and the QR images `qr-checkout-policy.png` and `qr-item-docs.png`. The QR images encode Synaptech URLs.
-- [ ] Remove the label entry points on the admin home and in `EquipmentUnitsTable`, and the "HMS inventory system" wording in `AddInventoryItemLabelsPage.tsx`.
-- [ ] Drop `html2canvas` and any other dependency once nothing imports it.
-- [ ] Delete or update the label tests (`GetLabelsBrowse.test.tsx`, `code128.test.tsx`).
+- [x] Remove the add-item labels step, the replacement-label page and the get-labels browse/product pages, with their routes and `ROUTE_TITLES` entries.
+- [x] Remove `components/admin-dashboard/labels/`, `src/lib/labelPdf.ts`, `src/lib/code128.ts`, and the QR images `qr-checkout-policy.png` and `qr-item-docs.png`. The QR images encode Synaptech URLs.
+- [x] Remove the label entry points on the admin home and in `EquipmentUnitsTable`, and the "HMS inventory system" wording in `AddInventoryItemLabelsPage.tsx`.
+- [x] Drop `html2canvas` and any other dependency once nothing imports it.
+- [x] Delete or update the label tests (`GetLabelsBrowse.test.tsx`, `code128.test.tsx`).
 
 ### Phase 2: equipment
 
@@ -213,10 +209,10 @@ Found on the web on 2026-11-12, **not checked against a physical tag**. Treat ev
 - [ ] Update the tests that use the old category values.
 
 **Remove Discord.** The committee doesn't use it.
-- [ ] Remove the required "Discord username" field from profile setup (`ProfileSetupPage.tsx`, its form state and validation) and from `ProfileSetupPage.test.tsx`.
-- [ ] Remove the Discord rows from the admin screens: `MemberDetail.tsx` (with its copy button), `LoanDetail.tsx` (`memberDiscord`, selected in `loanRequests.ts`), and `ViewMembers.tsx` (shown in the list and searched).
-- [ ] About 30 screens pass `profile.discord` to the header as `handle`, and `ProfileModal` shows it under the member's name. Replace it with something else (the NetID from `uw_email` is the natural choice) or drop the line.
-- [ ] Drop `discord` from the `Profile` type (`src/types/index.ts`) and from `AuditLog.tsx`'s field labels. The column itself can stay unused, as long as it allows null (see the `profiles` item in Phase 1). The audit trigger's field list in `20260921000000_audit_log.sql` can keep naming it, since it simply never changes.
+- [x] Remove the required "Discord username" field from profile setup (`ProfileSetupPage.tsx`, its form state and validation) and from `ProfileSetupPage.test.tsx`.
+- [x] Remove the Discord rows from the admin screens: `MemberDetail.tsx` (with its copy button), `LoanDetail.tsx` (`memberDiscord`, selected in `loanRequests.ts`), and `ViewMembers.tsx` (shown in the list and searched).
+- [x] About 30 screens pass `profile.discord` to the header as `handle`, and `ProfileModal` shows it under the member's name. The modal already shows the email, so the line was dropped rather than replaced (`UserProfile.handle` is gone).
+- [x] Drop `discord` from the `Profile` type (`src/types/index.ts`) and from `AuditLog.tsx`'s field labels. The column itself can stay unused, as long as it allows null (see the `profiles` item in Phase 1). The audit trigger's field list in `20260921000000_audit_log.sql` can keep naming it, since it simply never changes.
 
 ### Phase 3: room reservations
 
@@ -278,7 +274,7 @@ For real members, the committee still has to pick a sender that doesn't need a d
 - `src/components/` — page-specific components, grouped as `admin-dashboard/` and `user-dashboard/`; shared pieces (`BrandWordmark`, `ProfileModal`, `InfoTooltip`) sit at the top level
 - `src/context/` — `AuthContext`, the single source of auth/session/profile state
 - `src/router.tsx` — routes and guards (`PublicRoute`, `SetupRoute`, `PrivateRoute`, `AdminRoute`)
-- `src/lib/` — Supabase client, data access and pure helpers (loan bucketing, serial normalisation, label PDFs, Code 128)
+- `src/lib/` — Supabase client, data access and pure helpers (loan bucketing, serial normalisation)
 - `src/hooks/` — shared hooks such as `useBarcodeScanner`
 - `src/test/` — Vitest suite
 - `supabase/migrations/` — SQL migrations; `supabase/functions/` — Edge Functions (`send-email`, `send-scheduled-reminders`)
@@ -311,12 +307,12 @@ deploy time, after a successful build.
 meaning. Workers Assets honours `_headers` (it's only `_redirects` that's a problem,
 above). `index.html` is left out so a deploy is picked up on the next load.
 
-Bundle size: `jspdf`, `html2canvas` and `pdf-lib` are `import()`ed inside the functions
-that use them (`src/lib/labelPdf.ts`, `loanAgreementPdf.ts`, `loanAgreementApproval.ts`),
-and the label, agreement, audit-log, inventory-audit and email-template pages are
+Bundle size: `jspdf` and `pdf-lib` are `import()`ed inside the functions
+that use them (`loanAgreementPdf.ts`, `loanAgreementApproval.ts`),
+and the agreement, audit-log, inventory-audit and email-template pages are
 `React.lazy` routes in `src/router.tsx`. Keep new heavy dependencies behind a dynamic
 import the same way rather than importing them at module top level, and have the
-screen that needs one preload it on mount (see `preloadLabelPdfLibs` and friends) so
+screen that needs one preload it on mount (see the agreement screens' preload helpers) so
 the download isn't waiting behind a button press.
 
 Split chunks have a deploy-time consequence: a deploy removes the previous build's
@@ -457,7 +453,7 @@ The hand-off is a two-step flow. Step 1 (`/adminHome/loans/:id/hand-off`) opens 
 
 Scanning uses the browser's `BarcodeDetector` where it exists (Chromium only) and lazily loads a WebAssembly polyfill where it doesn't, which covers Safari, Firefox and every browser on iPhone. The `.wasm` is served from the app's own bundle rather than the package's default CDN, so a strict CSP or a blocked CDN doesn't break it.
 
-For a scan to match, the printed label has to be readable in the first place. The barcode on `SerialBarcodeLabel` is drawn with the "Libre Barcode 128" webfont, which turns characters into bars and computes nothing else — a Code 128 symbol also needs a start character, a modulo-103 checksum and a stop character. [`src/lib/code128.ts`](src/lib/code128.ts) adds them; the human-readable line below the barcode still shows the plain serial. The font size is load-bearing too: the label's barcode box is 491px wide and clips, so the size is set to fit a full 16-character symbol with a quiet zone either side. Printed at 2.5in that gives an X-dimension of about 0.26mm, just above the practical Code 128 minimum — a longer serial format would need the font size reduced again, or a wider label.
+The app no longer prints labels: units carry UW-issued barcodes, and `useBarcodeScanner` reads only Code 128 until the format of those tags is known (see Phase 2 in the checklist).
 
 Step 2 (`/adminHome/loans/:id/hand-off/agreement`, "Loan agreement sign off") is the admin counterpart to the member's "Sign the Hardware Loan Agreement" step: the same agreement, rendered from the same [`AgreementPreview`](src/components/user-dashboard/AgreementPreview.tsx) in `review` mode, so the admin can check the borrower signed it and that the serial number matches the hardware in their hands. Section 9 reads the borrower's stored signature and date back in the same two-column table the PDF prints them in, and section 10 — which the borrower leaves blank — is where the receiving Hardware Manager types the received date, time and their own name. Confirming calls `handOffLoanRequestItem` with **the typed name**, not the signed-in account's, since section 10 asks who physically handed the hardware over; the typed date and time become the date on the Certificate of Approval, while `reviewed_at` stays the real database timestamp.
 

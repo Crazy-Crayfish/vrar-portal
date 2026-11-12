@@ -69,7 +69,6 @@ export default function AdminHomePage() {
       name:     `${profile.first_name} ${profile.last_name}`,
       role:     profile.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER',
       email:    profile.uw_email,
-      handle:   profile.discord,
       location: profile.address,
     }
   }, [profile])
@@ -102,10 +101,6 @@ export default function AdminHomePage() {
     }
     if (actionId === 'view-members') {
       navigate('/adminHome/members')
-      return
-    }
-    if (actionId === 'get-labels') {
-      navigate('/adminHome/get-labels')
       return
     }
     if (actionId === 'inventory-audit') {
