@@ -18,6 +18,37 @@ This repository is a fork of the Synaptech Hardware Management System (HMS), bei
 
 Work through the phases in order. Tick an item when it's merged, and note the PR. An item marked *needs input* is waiting on something only the committee can provide (text, assets, accounts or a decision); see [Open decisions](#open-decisions).
 
+### Update (2026-11-12)
+
+Since the snapshot below: both Vault secrets exist; `.env.local` is set up on the user's machine; the user signed in with Google (`dhodack@uw.edu`) and is an admin. That also confirms the Google provider, the profile-setup flow and the role promotion work, for `localhost` only. Still open for OAuth, all waiting on a deployed origin: the real origin in the Google client's authorized origins, the Auth Site URL and Redirect URLs, and **Publish app** (until then only listed test users can sign in). Draft PRs from this session: #9 (remove label making), #10 (remove Discord), #11 (lookups stop assuming `SYN-`), and the scan-first tag entry PR stacked on #11 (merge #11 first).
+
+Security advisor, 2026-11-12: `record_inventory_audit` is executable by signed-out users through `/rest/v1/rpc`. Not yet checked whether its body rejects non-admins; look at it and, if it doesn't, revoke `anon` in a new migration. `rls_auto_enable` is a Supabase-created helper and is flagged the same way. Leaked-password protection is off, which only matters if password sign-in is ever turned on.
+
+#### Handoff to the next agent (2026-11-12)
+
+**Merged on 2026-11-12:** #9 (remove label making), #10 (remove Discord) and #11 (lookups stop assuming `SYN-`), each as a merge commit. #12 (scan-first UW tag entry, retargeted to `main`) merges after this; its conflicts with #9 were resolved on its branch. None of them touches `supabase/`, so no deploy ran.
+
+**Test flake to know about.** Two `ReturnAvailability` tests (and sometimes `EditAvailabilityModal`) exceed Vitest's 5s default in a full run and pass when run alone. They are not related to these PRs; consider raising their timeout or lightening the availability grid in tests.
+
+**Decisions the user has made.** Scan-first tag entry is approved *as a preliminary choice from web research only* (see [UW tag research](#uw-tag-research-unverified)). Placeholder logic for the UW barcode is fine until a real tag is available. The user asked to be paused on any key design point they haven't approved.
+
+**Still open, and the user has no answers yet:** (1) does every unit carry a UW tag; (2) what a real tag looks like (symbology, digit count). Also still waiting: the `org.ts` links and policies, logo and welcome copy, contract wording, category list, and whether room bookings include equipment.
+
+**Work that needs no outside input**, none started:
+- OAuth finish-up (a fresh agent was about to take this): the real origin in the Google client, the Auth Site URL and Redirect URLs, **Publish app**. All wait on a deployed Worker. The connector can't read Auth settings or the Google console, so the user does those by hand.
+- Check `record_inventory_audit` for a missing admin check (see the advisor note above) and, if needed, revoke `anon` in a new migration.
+- Schedule `send-scheduled-reminders` daily (needs `verify_jwt = false` and the secret-key check; no email will arrive until delivery is sorted).
+- Phase 2 items that don't need input: the training tick-box and `training_confirmed_at`, AirTag at hand-off, suggested projects. Each is a new migration, so each needs a user-approved design first.
+- Phase 3 (room reservations): design before building.
+
+**Gotchas learned this session.**
+- Background sessions must `EnterWorktree` before editing; the shell then refuses `cd` into the main checkout and compound commands it can't verify. Use plain separate commands, and write scripts with the Write tool instead of heredocs when a command is refused.
+- Files in this repo are mostly CRLF. Scripted edits must preserve line endings (read with `newline=''`, normalise for matching, write back with the original ending).
+- Tests need `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set to any value. The full suite occasionally times out two unrelated tests under load; rerun them alone before suspecting a regression.
+- `CLAUDE.md` is not tracked by git (only `AGENTS.md` is); its "Handoff" section is stale, so treat this file as canonical.
+- `.env.local` exists in the main checkout (publishable key only, gitignored). A `npm run dev` was started in the background against it and may still be running on port 5173.
+- The Supabase connector cannot set Edge Function secrets, and `apply_migration` stamps the current time as the version, so don't use it for repo migrations.
+
 ### Current status (2026-11-05)
 
 A snapshot for whoever picks this up next; the checklist below is the detailed record. Recheck the live facts with the Supabase connector (project ref `ctrwrzbckugapdvhaaez`) before acting on them.
@@ -133,11 +164,21 @@ select
 
 **UW barcodes instead of `SYN-` serials**
 - [x] `normalizeSerialNumber` stops adding the `SYN-` prefix and only trims and uppercases. The `SERIAL_PREFIX` checks and the printed `SYN -` prefix are gone from `CheckoutScan`, `ReturnScan`, `InventoryAuditScan` and `SerialEntryModal`.
-- [ ] Admins type or scan the UW tag number when adding a unit (`inventory.ts:164`), instead of `generateSerialNumbers` making one up.
-- [ ] `useBarcodeScanner` reads only `code_128`. Add the UW tags' format to `SERIAL_FORMATS` (*needs input*: scan a tag to find out which it is).
+- [x] **Preliminary choice, unverified (decided 2026-11-12 from web research only; see [UW tag research](#uw-tag-research-unverified)).** Admins scan the UW tag when adding a unit, with typing as the fallback, instead of `generateSerialNumbers` making one up. [`TagEntryModal`](src/components/admin-dashboard/TagEntryModal.tsx) collects the tags *before* anything is saved: the add-item page opens it with one slot per unit, and the units table's "Add unit" opens it for one. Each tag is checked against inventory first (duplicates and tags already on another unit are refused). `generateSerialNumbers` and the `SYN-` prefix are gone. Revisit once a real tag has been scanned.
+- [ ] `useBarcodeScanner` reads only `code_128`. Add the UW tags' format to `SERIAL_FORMATS` (*needs input*: scan a tag to find out which it is). Until then the camera may not read a real tag at all; the typed fallback in `TagEntryModal` is the way through.
 - [x] `serialNumber.test.ts` and the scan tests no longer expect a prefix to be added. Fixtures still use `SYN-` strings, which are just opaque serials now.
 
-*Placeholder in place:* `useBarcodeScanner` still reads only Code 128, and `generateSerialNumbers` still makes `SYN-` serials for new units. Both stay until the entry flow above is designed and the tag format is known.
+*Placeholder in place:* `useBarcodeScanner` still reads only Code 128 until the tag format is known. Existing tests and fixtures still use `SYN-` strings, which are just opaque serials now.
+
+#### UW tag research (unverified)
+
+Found on the web on 2026-11-12, **not checked against a physical tag**. Treat every line as a guess to confirm, and correct this section once a tag has been scanned.
+
+- *What it is:* the UW tag number is the "Asset Identifier" in Workday, a unique identifier UW requires to be physically attached to each piece of equipment. It is separate from Workday's own `AST…` number. Only the Equipment Inventory Office (EIO) makes tags, at no charge, and departments may not change a tag number (they email eio@uw.edu). Sources: [Tagging Procedure](https://finance.uw.edu/eio/equipment-lifecycle/receiving/tagging-procedure), [Equipment Tags](https://finance.uw.edu/eio/node/1554), [Non-Taggable Equipment](https://finance.uw.edu/eio/equipment-lifecycle/receiving/non-taggable-equipment).
+- *Consequence for this app:* the numbers are pre-printed by the university, so the app cannot generate them; someone has to link each tag to a unit once.
+- *Tag kinds:* a dark purple bar code tag is required at $5,000 or more; for cheaper items a department may choose a beige bar code tag "for departmental internal tracking only". Most VR/AR hardware is under $5,000, so whether the committee's units carry any tag, and which kind, is **unknown**.
+- *Format (guess):* UW's own pages state neither the barcode symbology nor the digit count. One EIO page uses `1199887` as an example tag, which hints at a numeric tag of about 7 digits. Code 128 or Code 39 would be typical for asset tags, but that is a guess. Don't add `code_39` to the scanner blindly: manufacturers' own Code 39 barcodes on hardware would then be read as serials.
+- *Items that can't be tagged* (lenses, software) go in a paper "No Tag" log at UW. Whether any committee item falls in that group is unknown.
 
 **New equipment contract** (*needs input: the wording*). The signing system stays as it is.
 - [ ] Replace the text in `src/lib/loanAgreementContent.ts` (title, intro, sections 3–8, the signing disclaimer). Both `AgreementPreview` and `loanAgreementPdf.ts` read it.
@@ -193,7 +234,7 @@ Members reserve the committee's room as a whole. A room reservation does **not**
 Not yet known, but expected soon. Each one blocks only the items marked *needs input* that depend on it.
 
 - **Can a room reservation include equipment?** Assumed no for now. If yes, a reservation would need to hold units the way a loan request does.
-- **Which barcode format do UW property tags use?** It blocks the `SERIAL_FORMATS` change.
+- **Which barcode format do UW property tags use, and does every unit carry one?** It blocks the `SERIAL_FORMATS` change. Needs a photo or scan of one real tag. The scan-first tag entry flow is a preliminary choice made on web research alone (see [UW tag research](#uw-tag-research-unverified)); if some units will have no tag, it needs a way to add one without.
 - **How emails reach members without a domain.** See [Email delivery without a domain](#email-delivery-without-a-domain) below. It blocks real-member email, and the reminder schedule can't be checked end to end until it's settled.
 
 #### Email delivery without a domain

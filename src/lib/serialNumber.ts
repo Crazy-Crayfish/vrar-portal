@@ -1,28 +1,3 @@
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-const GENERATED_SUFFIX_LENGTH = 9
-
-function randomSuffix(): string {
-  let result = ''
-  for (let i = 0; i < GENERATED_SUFFIX_LENGTH; i++) {
-    result += CHARSET[Math.floor(Math.random() * CHARSET.length)]
-  }
-  return result
-}
-
-// TEMPORARY: units are meant to carry UW-issued barcodes, which an admin will
-// type or scan when adding a unit. Until that entry flow exists, new units
-// still get a made-up serial of the form SYN-XXXXXXXXX (9 random uppercase
-// letters/digits, unique within the batch). Remove with the entry flow.
-export function generateSerialNumbers(count: number): string[] {
-  const serials = new Set<string>()
-  while (serials.size < count) {
-    serials.add(`${SERIAL_PREFIX}${randomSuffix()}`)
-  }
-  return Array.from(serials)
-}
-
-const SERIAL_PREFIX = 'SYN-'
-
 /**
  * Turns whatever a barcode reader or a typed field produced into the form
  * serial numbers are stored in: trimmed and upper-cased. The text is

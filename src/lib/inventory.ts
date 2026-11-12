@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
 import { CACHE_KEYS, invalidate, peekValue, refresh, DISPLAY_REUSE_MS } from './queryCache'
-import { generateSerialNumbers } from './serialNumber'
 import type { Equipment, EquipmentAddon, EquipmentCategory, EquipmentProductType, EquipmentUnit } from '../types'
 
 const EQUIPMENT_IMAGES_BUCKET = 'equipment-images'
@@ -157,11 +156,10 @@ export async function createEquipmentUnits(
   return data as EquipmentUnit[]
 }
 
-// Creates a single new equipment_units row with a freshly generated
-// serial number, for the "add item" action on the manage-inventory-item
-// units table — one physical unit added to an existing hardware product.
-export async function addEquipmentUnit(equipmentId: string): Promise<EquipmentUnit> {
-  const [serialNumber] = generateSerialNumbers(1)
+// Creates a single new equipment_units row carrying the unit's UW tag
+// number, for the "add unit" action on the manage-inventory-item units
+// table — one physical unit added to an existing hardware product.
+export async function addEquipmentUnit(equipmentId: string, serialNumber: string): Promise<EquipmentUnit> {
   const [unit] = await createEquipmentUnits(equipmentId, [serialNumber])
   return unit
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ConfirmActionModal from '../ConfirmActionModal'
 import { Tooltip } from '../Tooltip'
+import { TagEntryModal } from './TagEntryModal'
 import {
   PauseIconFilled,
   PlayIconFilled,
@@ -46,6 +47,7 @@ export function EquipmentUnitsTable({ equipmentId, onCountChange }: EquipmentUni
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [isAdding, setAdding] = useState(false)
+  const [isTagEntryOpen, setTagEntryOpen] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
 
   const [deleteTarget, setDeleteTarget] = useState<EquipmentUnit | null>(null)
@@ -78,21 +80,23 @@ export function EquipmentUnitsTable({ equipmentId, onCountChange }: EquipmentUni
     }
   }, [equipmentId])
 
-  async function handleAddItem() {
+  async function handleAddItem(serialNumber: string) {
     if (isAdding) return
     setAdding(true)
     setAddError(null)
 
     try {
-      const unit = await addEquipmentUnit(equipmentId)
+      const unit = await addEquipmentUnit(equipmentId, serialNumber)
       const newCount = rows.length + 1
       await setEquipmentQuantityTotal(equipmentId, newCount)
       setRows((current) => [...current, { unit, status: 'available' }])
       onCountChange?.(newCount)
+      setTagEntryOpen(false)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to add a new unit:', error)
-      setAddError('Could not add a new item. Please try again.')
+      setAddError('Could not add a new unit. Please try again.')
+      setTagEntryOpen(false)
     } finally {
       setAdding(false)
     }
@@ -265,7 +269,7 @@ export function EquipmentUnitsTable({ equipmentId, onCountChange }: EquipmentUni
             {addError && <p className={styles.inlineError} role="alert">{addError}</p>}
 
             <div className={styles.footer}>
-              <button type="button" className={styles.addButton} onClick={() => void handleAddItem()} disabled={isAdding}>
+              <button type="button" className={styles.addButton} onClick={() => setTagEntryOpen(true)} disabled={isAdding}>
                 <PlusIconSmallFilled size={15} color="#4a647f" />
                 {isAdding ? '…' : 'Add unit'}
               </button>
@@ -273,6 +277,20 @@ export function EquipmentUnitsTable({ equipmentId, onCountChange }: EquipmentUni
           </>
         )}
       </div>
+
+      {isTagEntryOpen && (
+        <TagEntryModal
+          count={1}
+          heading="Scan the new unit’s tag"
+          confirmLabel="Add unit"
+          isSubmitting={isAdding}
+          onConfirm={([tag]) => void handleAddItem(tag)}
+          onCancel={() => {
+            setTagEntryOpen(false)
+            setAddError(null)
+          }}
+        />
+      )}
 
       <ConfirmActionModal
         isOpen={deleteTarget !== null}
