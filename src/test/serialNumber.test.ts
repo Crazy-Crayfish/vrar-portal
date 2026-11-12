@@ -1,4 +1,4 @@
-import { generateSerialNumbers, normalizeSerialNumber } from '../lib/serialNumber'
+import { normalizeSerialNumber } from '../lib/serialNumber'
 
 // Shared by the scan-based checkout, the return flow, the hand-off
 // verification and the inventory audit. All four look a unit up by the result,
@@ -17,17 +17,5 @@ describe('normalizeSerialNumber', () => {
   it('returns nothing for nothing', () => {
     expect(normalizeSerialNumber('')).toBe('')
     expect(normalizeSerialNumber('   ')).toBe('')
-  })
-})
-
-describe('generateSerialNumbers', () => {
-  it('generates the asked-for number of prefixed, unique serials', () => {
-    const serials = generateSerialNumbers(25)
-
-    expect(new Set(serials).size).toBe(25)
-    for (const serial of serials) {
-      expect(serial).toMatch(/^SYN-[A-Z0-9]{9}$/)
-      expect(normalizeSerialNumber(serial)).toBe(serial)
-    }
   })
 })

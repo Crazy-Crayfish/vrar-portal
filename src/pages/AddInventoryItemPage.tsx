@@ -5,6 +5,7 @@ import { Header } from '../components/admin-dashboard/Header'
 import { InfoTooltip } from '../components/InfoTooltip'
 import { ProfileModal } from '../components/admin-dashboard/ProfileModal'
 import { AddOnPickerModal } from '../components/admin-dashboard/AddOnPickerModal'
+import { TagEntryModal } from '../components/admin-dashboard/TagEntryModal'
 import {
   ArrowLeftIcon,
   ImagePlaceholderIconFilled,
@@ -21,7 +22,6 @@ import {
   uploadEquipmentImage,
   type CreateEquipmentAddonInput,
 } from '../lib/inventory'
-import { generateSerialNumbers } from '../lib/serialNumber'
 import { CATEGORY_OPTIONS } from '../lib/equipmentCategories'
 import type { Equipment, EquipmentCategory, UserProfile } from '../types'
 import styles from './AddInventoryItemPage.module.css'
@@ -57,6 +57,7 @@ export default function AddInventoryItemPage() {
 
   const [isSubmitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isTagEntryOpen, setTagEntryOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -145,7 +146,18 @@ export default function AddInventoryItemPage() {
     (isConsumable || !hasOptionalAddons || optionalAddons.length > 0) &&
     (isConsumable || !hasRequiredAddons || requiredAddons.length > 0)
 
-  async function handleNext() {
+  // Hardware needs its UW tags before anything is saved, so backing out of
+  // the tag dialog leaves no half-added item behind. Consumables have no tags.
+  function handleNext() {
+    if (!canProceed || isSubmitting) return
+    if (isConsumable) {
+      void saveItem([])
+    } else {
+      setTagEntryOpen(true)
+    }
+  }
+
+  async function saveItem(tags: string[]) {
     if (!canProceed || isSubmitting || !imageFile) return
 
     setSubmitting(true)
@@ -183,16 +195,16 @@ export default function AddInventoryItemPage() {
         return
       }
 
-      const serials = generateSerialNumbers(quantity)
-      await createEquipmentUnits(equipment.id, serials)
+      await createEquipmentUnits(equipment.id, tags)
 
       navigate('/adminHome/add-item/labels', {
-        state: { productName: equipment.name, imagePreviewUrl: imageUrl, quantity, serials },
+        state: { productName: equipment.name, imagePreviewUrl: imageUrl, quantity, serials: tags },
       })
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to add inventory item:', error)
       setSubmitError('Something went wrong adding this item. Please try again.')
+      setTagEntryOpen(false)
     } finally {
       setSubmitting(false)
     }
@@ -522,6 +534,17 @@ export default function AddInventoryItemPage() {
 
       {isProfileOpen && user && (
         <ProfileModal user={user} onClose={() => setProfileOpen(false)} onLogOut={handleLogOut} />
+      )}
+
+      {isTagEntryOpen && (
+        <TagEntryModal
+          count={quantity}
+          heading={quantity === 1 ? 'Scan the unit’s tag' : `Scan the ${quantity} units’ tags`}
+          confirmLabel={quantity === 1 ? 'Add item' : `Add ${quantity} units`}
+          isSubmitting={isSubmitting}
+          onConfirm={(tags) => void saveItem(tags)}
+          onCancel={() => setTagEntryOpen(false)}
+        />
       )}
 
       {activePicker && (

@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
+  addEquipmentUnit,
+  fetchEquipmentUnitBySerial,
   fetchEquipmentUnitsWithStatus,
   setEquipmentUnitOnHold,
   UnitInUseError,
@@ -17,6 +19,7 @@ vi.mock('../lib/inventory', async () => {
     fetchEquipmentUnitsWithStatus: vi.fn(),
     setEquipmentUnitOnHold: vi.fn(),
     addEquipmentUnit: vi.fn(),
+    fetchEquipmentUnitBySerial: vi.fn(),
     deleteEquipmentUnit: vi.fn(),
     setEquipmentQuantityTotal: vi.fn(),
   }
@@ -31,6 +34,14 @@ vi.mock('../lib/labelPdf', () => ({
 
 vi.mock('../components/admin-dashboard/labels/QrDocLabel', () => ({ QrDocLabel: () => null }))
 vi.mock('../components/admin-dashboard/labels/SerialBarcodeLabel', () => ({ SerialBarcodeLabel: () => null }))
+
+let detectBarcode: ((value: string) => void) | undefined
+vi.mock('../hooks/useBarcodeScanner', () => ({
+  useBarcodeScanner: (onDetected: (value: string) => void) => {
+    detectBarcode = onDetected
+    return { videoRef: { current: null }, isSupported: true, permissionError: null }
+  },
+}))
 
 function unit(id: string, serial: string, overrides: Partial<EquipmentUnit> = {}): EquipmentUnit {
   return {
@@ -61,6 +72,9 @@ function rowFor(serial: string) {
 beforeEach(() => {
   vi.mocked(fetchEquipmentUnitsWithStatus).mockReset().mockResolvedValue(rows)
   vi.mocked(setEquipmentUnitOnHold).mockReset()
+  vi.mocked(addEquipmentUnit).mockReset()
+  vi.mocked(fetchEquipmentUnitBySerial).mockReset().mockResolvedValue(null)
+  detectBarcode = undefined
 })
 
 describe('EquipmentUnitsTable — putting units on hold', () => {
@@ -102,5 +116,31 @@ describe('EquipmentUnitsTable — putting units on hold', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/just requested this unit.*SYN-AAA111/)
     expect(await within(rowFor('SYN-AAA111')).findByText('requested')).toBeInTheDocument()
+  })
+})
+
+describe('EquipmentUnitsTable — adding a unit', () => {
+  it('asks for the unit\u2019s tag and adds the unit under it', async () => {
+    const added = unit('u-9', '1199887')
+    vi.mocked(addEquipmentUnit).mockResolvedValue(added)
+    render(<EquipmentUnitsTable equipmentId="eq-1" productName="Muse 2" />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add unit' }))
+    detectBarcode?.('1199887')
+    await within(screen.getByRole('dialog')).findByText('1199887')
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add unit' }))
+
+    expect(addEquipmentUnit).toHaveBeenCalledWith('eq-1', '1199887')
+    expect(await screen.findByText('1199887')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('adds nothing when the tag dialog is cancelled', async () => {
+    render(<EquipmentUnitsTable equipmentId="eq-1" productName="Muse 2" />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add unit' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+
+    expect(addEquipmentUnit).not.toHaveBeenCalled()
   })
 })
