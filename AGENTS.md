@@ -18,6 +18,50 @@ This repository is a fork of the Synaptech Hardware Management System (HMS), bei
 
 Work through the phases in order. Tick an item when it's merged, and note the PR. An item marked *needs input* is waiting on something only the committee can provide (text, assets, accounts or a decision); see [Open decisions](#open-decisions).
 
+### Update (2026-11-13)
+
+The site is live and usable. This section is the record of the session that got it there; where it disagrees with the older snapshots below (2026-11-05, 2026-11-12), this one wins.
+
+#### What is live
+
+- **Site:** Cloudflare Worker `vrar-portal` at `https://vrar-portal.arvrcommittee.workers.dev`, connected to GitHub through Workers Builds. A merge to `main` redeploys it. Build variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in Cloudflare.
+- **Sign-in:** the Google OAuth app is **published** (In production), with the `workers.dev` origin in the client, the site as its homepage and `/privacy` as its privacy policy link on the Branding page. Supabase Auth Site URL and Redirect URLs list the `workers.dev` origin and `localhost:5173`. Sign-in was tested on the live site and the user is an admin.
+- **Database:** project `ctrwrzbckugapdvhaaez`, both Vault secrets present, Edge Functions deployed by the GitHub integration (region `us-east-1`).
+- **Merged to `main`:** #9 remove labels, #10 remove Discord, #11 lookups stop assuming `SYN-`, #12 scan-first UW tag entry (preliminary, see UW tag research), #13 public privacy page. #14 (this documentation) was open when this was written.
+
+#### Privacy policy page
+
+- `/privacy` is a public route (`PrivacyPolicyPage.tsx`, CSS module, a test in `src/test/PrivacyPolicyPage.test.tsx`, a `ROUTE_TITLES` entry, and `PRIVACY_POLICY.url` in `org.ts`). It sits outside every route guard because Google's reviewers and signed-out visitors must be able to open it. Effective date November 12, 2026; contact `arvrcommittee@gmail.com`; data stored in the USA.
+- The text is adapted from Synaptech's published HMS policy, using values the user supplied (the committee is a UW student committee, **not** an RSO). **The retention periods, the 30-day response and breach-notification times, and the email commitments are Synaptech's numbers, kept at the user's instruction ("leave the 3 statements as is for now") and not confirmed by the committee.** Only the 12-month audit-log pruning is actually enforced. Have the committee confirm or change those three statements, then edit the page.
+- There is no placeholder marking on the page, by the user's choice.
+
+#### Cloudflare gotcha
+
+Pull-request branches are built with `wrangler preview`, which fails with "Your Wrangler configuration is missing a `previews` block" unless `wrangler.jsonc` has one. It now has `"previews": {}`. Don't remove it.
+
+#### Email: decided, deferred
+
+Real-member email doesn't work yet and nothing was built for it. Resend without a verified domain only delivers to the Resend account's own address and rejects the CC. Synaptech's README sets `EMAIL_FROM_ADDRESS=hardware@mail.synaptechuw.org`, so they use a verified domain, and **the user decided the committee will get a domain the same way** (timing open). The setup steps are under [Email delivery without a domain](#email-delivery-without-a-domain). Don't build the Gmail SMTP sender.
+
+#### UW tags
+
+The user says the committee's units carry the **beige** UW tags (departmental tracking). The symbology and digit count are still unknown: nobody has scanned one. When someone does, add the format to `SERIAL_FORMATS` in `useBarcodeScanner`, and correct the UW tag research section.
+
+#### Still open
+
+- *Needs input from the committee:* `org.ts` links (help, documentation, usage policy), logo and welcome copy, both contracts' wording, the category list, whether a room booking includes equipment, a scanned beige tag, and confirmation of the privacy-policy statements above.
+- *Needs a domain:* real-member email, then scheduling `send-scheduled-reminders`.
+- *Needs a user-approved design first (don't start without one):* training confirmation, AirTag at hand-off, suggested projects, room reservations.
+- *Small, no input needed:* check `record_inventory_audit` for a missing admin check and, if needed, revoke `anon` execute in a new migration (the advisor flagged it on 2026-11-12).
+
+#### Working rules and gotchas
+
+- The user wants to be asked before any design choice they haven't approved, and anything based on web research alone is marked unverified.
+- `CLAUDE.md` says Synaptech is read-only for this work. Synaptech's repo was read (GitHub and the user's local clone) but its live Supabase, Resend and Cloudflare were never touched.
+- Scripted edits to files here: they are mostly CRLF, so read and write with `newline=''`, and on Windows always pass `encoding='utf-8'` in Python. A default-encoding edit once wrote an invalid byte (0x85) into this file; it was repaired.
+- The Supabase connector can't set or list Edge Function secrets, and can't read Auth settings or the Google console; the user does those by hand. Never use `apply_migration` for repo migrations.
+- The Google Auth Platform's authorized domains (`ctrwrzbckugapdvhaaez.supabase.co`, `arvrcommittee.workers.dev`) were added automatically and can't be deleted while a client URI uses them. That is expected.
+
 ### Update (2026-11-12)
 
 Since the snapshot below: both Vault secrets exist; `.env.local` is set up on the user's machine; the user signed in with Google (`dhodack@uw.edu`) and is an admin. That also confirms the Google provider, the profile-setup flow and the role promotion work, for `localhost` only. Still open for OAuth, all waiting on a deployed origin: the real origin in the Google client's authorized origins, the Auth Site URL and Redirect URLs, and **Publish app** (until then only listed test users can sign in). Draft PRs from this session: #9 (remove label making), #10 (remove Discord), #11 (lookups stop assuming `SYN-`), and the scan-first tag entry PR stacked on #11 (merge #11 first).
@@ -72,7 +116,7 @@ select
 
 **Done by the user since #7:** Auth URL Configuration for `http://localhost:5173`; a Resend account and API key; the `RESEND_API_KEY` and `EMAIL_FROM_ADDRESS` secrets.
 
-**Skipped on purpose:** a verified sending domain. The committee has none and won't get one, so for now no email reaches anyone (see [Email delivery without a domain](#email-delivery-without-a-domain)). Don't make this block the steps below.
+**Skipped on purpose:** a verified sending domain. *Update 2026-11-13:* the committee will get one, the way Synaptech did, but not yet. Until then no email reaches real members (see [Email delivery without a domain](#email-delivery-without-a-domain)). Don't make this block the steps below.
 
 **The user's next steps, in order:**
 1. **Vault secrets.** Run this in the SQL editor. The secret value is the *first* argument:
@@ -96,7 +140,7 @@ select
    - ~~Remove Discord~~ (Phase 2): done, see the checklist.
    - **Schedule `send-scheduled-reminders` daily:** a `pg_cron` + `pg_net` migration using the same Vault secrets, plus `verify_jwt = false` and the secret-key check in the function, as `send-email` has. It can merge now, but no reminder will be delivered until email delivery is sorted.
    - **Training confirmation** and **AirTag at hand-off**: new columns via new migrations, plus UI.
-4. Raise [email delivery](#email-delivery-without-a-domain) with the user as a decision, and don't build a Gmail SMTP sender until they agree to it.
+4. ~~Raise email delivery as a decision.~~ Decided 2026-11-13: wait for a domain and use Resend (see [Email delivery without a domain](#email-delivery-without-a-domain)). Don't build a Gmail SMTP sender.
 
 **Still waiting on the committee:** the `org.ts` links and policies; the logo, footer image and welcome copy; the wording of both contracts; the category list; the UW tag barcode format; whether room bookings include equipment; how email reaches members.
 
@@ -116,7 +160,7 @@ select
 - [ ] `HELP_AND_SUPPORT_URL`: a chat invite, a form, or wherever members ask for help.
 - [ ] `DOCUMENTATION_URL`: general site documentation, shown as "View documentation" on the member home page.
 - [ ] `PRIVACY_POLICY` and `USAGE_POLICY`: the committee's bylaws and terms, with their titles. Agreeing to them stays **not stored**, deliberately.
-  - A public privacy policy page now exists at `/privacy` (`PrivacyPolicyPage.tsx`) and `PRIVACY_POLICY.url` points to it. Its text is adapted from Synaptech's published HMS policy. The retention periods, the 30-day response and breach times, and the email commitments are Synaptech's, carried over unchanged and not yet confirmed by the committee; only the 12-month audit-log pruning is enforced. Google also requires a homepage and a privacy policy URL before an External app can be published: use `https://vrar-portal.arvrcommittee.workers.dev` and `�/privacy` on the Branding page. The OAuth app is still in testing mode until that is done.
+  - A public privacy policy page now exists at `/privacy` (`PrivacyPolicyPage.tsx`) and `PRIVACY_POLICY.url` points to it. Its text is adapted from Synaptech's published HMS policy. The retention periods, the 30-day response and breach times, and the email commitments are Synaptech's, carried over unchanged and not yet confirmed by the committee; only the 12-month audit-log pruning is enforced. Google requires a homepage and a privacy policy URL before an External app can be published; the Branding page uses `https://vrar-portal.arvrcommittee.workers.dev` and `https://vrar-portal.arvrcommittee.workers.dev/privacy`, and the app is now published.
 - [x] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox, `arvrcommittee@gmail.com` (it replaces Synaptech's `synaptechuw@gmail.com`). The same value is in the `EMAIL_ARCHIVE_CC` secret; change both together.
 - [ ] Confirm `APP_NAME` ("VR/AR Hardware Portal") and `ORG_NAME` ("VR/AR Committee"). If either changes, change `index.html`'s `<title>` too.
 
@@ -128,9 +172,9 @@ select
 - [x] Take the internal functions out of the public API (#3, [`20261102000000_internal_function_lockdown.sql`](supabase/migrations/20261102000000_internal_function_lockdown.sql)). Anyone could call `notify_email_event` through `/rest/v1/rpc`, and with it make the app send real emails. Deploys on merge; check Supabase's security advisor afterwards.
 - [x] Turn on `pg_cron` and schedule the audit-log pruning (#5, [`20261104000000_audit_log_pruning_schedule.sql`](supabase/migrations/20261104000000_audit_log_pruning_schedule.sql); see [Retention](#retention)).
 - [x] Create a Google OAuth client in Google Cloud. Its callback is the new project's `/auth/v1/callback`. Enable the Google provider in Supabase Auth with that client. Done under the committee's Google account as an **External** app with only the `openid`, `userinfo.email` and `userinfo.profile` scopes, so no Google verification is needed. Its authorized JavaScript origin is `http://localhost:5173` for now.
-- [ ] Add the site's real origin(s) to the OAuth client's authorized JavaScript origins once the Worker is deployed, then **Publish app** under Audience in the Google Auth Platform. Until then the app is in testing mode and only its listed test users can sign in.
-- [ ] In Supabase Auth → URL Configuration, set the Site URL and Redirect URLs to the site's origins, including the `workers.dev` one while testing. *Done for local development:* the Site URL is `http://localhost:5173`, which is also in Redirect URLs. Add the `workers.dev` origin once the Worker is deployed.
-- [ ] Set up Resend. *The account and API key exist.* There is **no sending domain, and the committee won't get one**, so Resend stays in test mode and real members can't receive email. See [Email delivery without a domain](#email-delivery-without-a-domain) under Open decisions.
+- [x] Add the site's real origin(s) to the OAuth client's authorized JavaScript origins once the Worker is deployed, then **Publish app** under Audience in the Google Auth Platform. Until then the app is in testing mode and only its listed test users can sign in. *Done 2026-11-13:* the origin `https://vrar-portal.arvrcommittee.workers.dev` is in the client, the Branding page has the site as its homepage and `/privacy` as its privacy policy link (Google refuses to publish without both), and the app is **published** (In production). Sign-in was checked afterwards.
+- [x] In Supabase Auth → URL Configuration, set the Site URL and Redirect URLs to the site's origins, including the `workers.dev` one while testing. *Done for local development:* the Site URL is `http://localhost:5173`, which is also in Redirect URLs. Add the `workers.dev` origin once the Worker is deployed. *Done 2026-11-13:* Site URL is the `workers.dev` address; Redirect URLs hold `https://vrar-portal.arvrcommittee.workers.dev/**` and the `localhost:5173` ones.
+- [ ] Set up Resend. *The account and API key exist.* There is **no sending domain yet**; the committee has decided to get one later (2026-11-13), so until then Resend stays in test mode and real members can't receive email. See [Email delivery without a domain](#email-delivery-without-a-domain) under Open decisions.
 - [ ] Set the Edge Function secrets in the dashboard (Edge Functions → Secrets). Set so far: `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` (`VR/AR Hardware <onboarding@resend.dev>`, Resend's shared test sender) and `EMAIL_ARCHIVE_CC` (`arvrcommittee@gmail.com`). `EMAIL_FOOTER_IMAGE_URL` waits for the footer image below. The connector can neither set nor list secrets, so ask the user to confirm.
 - [x] Deploy all 3 Edge Functions (first deployed by the merge of #5). They're declared in [`supabase/config.toml`](supabase/config.toml), so the GitHub integration deploys them on every push to `main`, with `send-email`'s JWT check off:
   - `send-email`;
@@ -138,10 +182,10 @@ select
   - `delete-user` (used by the admin "delete member" action, `src/lib/members.ts`).
 
   A new function needs its own `[functions.<name>]` entry there, or it isn't deployed.
-- [ ] Create the Vault secrets `edge_functions_url` and `service_role_key` (see [One-time setup](#one-time-setup), step 5).
-- [ ] Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`, and in the Cloudflare build variables. They're read at build time, so redeploy after setting them.
-- [ ] Deploy the Worker (`npx wrangler deploy`). The committee has no domain, so the site lives at its `workers.dev` address; there's no custom domain to add. The Deployment section's `hardware.synaptechuw.org` is Synaptech's and doesn't apply.
-- [ ] Sign in once and finish profile setup, then promote that account to admin from the SQL editor: `update public.profiles set role = 'admin' where uw_email = '<your uw email>';`. Later admins can be promoted from the app.
+- [x] Create the Vault secrets `edge_functions_url` and `service_role_key` (see [One-time setup](#one-time-setup), step 5). *Done; both exist (checked through the connector on 2026-11-12).*
+- [x] Put `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`, and in the Cloudflare build variables. They're read at build time, so redeploy after setting them. *Done: `.env.local` locally and the Cloudflare build variables.*
+- [x] Deploy the Worker (`npx wrangler deploy`). The site lives at its `workers.dev` address and no custom domain for the site is planned (the email domain is a separate matter, see below). The Deployment section's `hardware.synaptechuw.org` is Synaptech's and doesn't apply. *Done 2026-11-13:* the Worker is `vrar-portal` at `https://vrar-portal.arvrcommittee.workers.dev`, connected to GitHub in Cloudflare (Workers Builds), so a merge to `main` redeploys it. Pull-request branches build with `wrangler preview`, which needs the empty `previews` block in `wrangler.jsonc`; without it the PR check fails with "missing a `previews` block".
+- [x] Sign in once and finish profile setup, then promote that account to admin from the SQL editor: `update public.profiles set role = 'admin' where uw_email = '<your uw email>';`. Later admins can be promoted from the app. *Done 2026-11-13:* the committee's admin account is signed in and promoted.
 - [ ] Fill in each email template's subject and body in the admin email editor. They're seeded blank, except `return-reminder-one-week`, whose seeded body names the "Synaptech Hardware Checkout Policy". Correct it there rather than in the migration.
 
 **Rebrand** (*needs input: logo and copy*)
@@ -177,7 +221,7 @@ Found on the web on 2026-11-12, **not checked against a physical tag**. Treat ev
 
 - *What it is:* the UW tag number is the "Asset Identifier" in Workday, a unique identifier UW requires to be physically attached to each piece of equipment. It is separate from Workday's own `AST…` number. Only the Equipment Inventory Office (EIO) makes tags, at no charge, and departments may not change a tag number (they email eio@uw.edu). Sources: [Tagging Procedure](https://finance.uw.edu/eio/equipment-lifecycle/receiving/tagging-procedure), [Equipment Tags](https://finance.uw.edu/eio/node/1554), [Non-Taggable Equipment](https://finance.uw.edu/eio/equipment-lifecycle/receiving/non-taggable-equipment).
 - *Consequence for this app:* the numbers are pre-printed by the university, so the app cannot generate them; someone has to link each tag to a unit once.
-- *Tag kinds:* a dark purple bar code tag is required at $5,000 or more; for cheaper items a department may choose a beige bar code tag "for departmental internal tracking only". Most VR/AR hardware is under $5,000, so whether the committee's units carry any tag, and which kind, is **unknown**.
+- *Tag kinds:* a dark purple bar code tag is required at $5,000 or more; for cheaper items a department may choose a beige bar code tag "for departmental internal tracking only". Most VR/AR hardware is under $5,000, so whether the committee's units carry any tag, and which kind, was **unknown**. *Update 2026-11-13:* the user says the units carry the **beige** tags. Symbology and digit count are still unchecked; nobody has scanned one.
 - *Format (guess):* UW's own pages state neither the barcode symbology nor the digit count. One EIO page uses `1199887` as an example tag, which hints at a numeric tag of about 7 digits. Code 128 or Code 39 would be typical for asset tags, but that is a guess. Don't add `code_39` to the scanner blindly: manufacturers' own Code 39 barcodes on hardware would then be read as serials.
 - *Items that can't be tagged* (lenses, software) go in a paper "No Tag" log at UW. Whether any committee item falls in that group is unknown.
 
@@ -236,11 +280,11 @@ Not yet known, but expected soon. Each one blocks only the items marked *needs i
 
 - **Can a room reservation include equipment?** Assumed no for now. If yes, a reservation would need to hold units the way a loan request does.
 - **Which barcode format do UW property tags use, and does every unit carry one?** It blocks the `SERIAL_FORMATS` change. Needs a photo or scan of one real tag. The scan-first tag entry flow is a preliminary choice made on web research alone (see [UW tag research](#uw-tag-research-unverified)); if some units will have no tag, it needs a way to add one without.
-- **How emails reach members without a domain.** See [Email delivery without a domain](#email-delivery-without-a-domain) below. It blocks real-member email, and the reminder schedule can't be checked end to end until it's settled.
+- **How emails reach members.** Decided 2026-11-13: the committee will get a domain and verify it in Resend, as Synaptech did; the timing is open. See [Email delivery without a domain](#email-delivery-without-a-domain) below. Until then real-member email doesn't work, and the reminder schedule can't be checked end to end.
 
 #### Email delivery without a domain
 
-The committee has no domain and won't get one (decided 2026-11-05). That rules out Resend for real use, since Resend in test mode, sending as `onboarding@resend.dev`, only delivers to the email the Resend account was created with. The rule covers every recipient, **CC included**. `send-email` CCs every message to `EMAIL_ARCHIVE_CC` (`arvrcommittee@gmail.com`), and a member-facing email therefore has two different addresses on it, so Resend rejects **every** send as things stand. Admin-facing templates go only to the archive inbox, so they'd get through only if the Resend account was created with `arvrcommittee@gmail.com`.
+**Decision (2026-11-13): the committee will get a domain and use Resend with it, the same way Synaptech does. Deferred until then; do not build the Gmail SMTP alternative below.** This replaces the 2026-11-05 decision that the committee would never have a domain. Until a domain is verified, Resend can't be used for real members, since Resend in test mode, sending as `onboarding@resend.dev`, only delivers to the email the Resend account was created with. The rule covers every recipient, **CC included**. `send-email` CCs every message to `EMAIL_ARCHIVE_CC` (`arvrcommittee@gmail.com`), and a member-facing email therefore has two different addresses on it, so Resend rejects **every** send as things stand. Admin-facing templates go only to the archive inbox, so they'd get through only if the Resend account was created with `arvrcommittee@gmail.com`.
 
 Why this doesn't block anything else yet:
 - Emails are fire-and-forget (`notify_email_event` → `pg_net` → `send-email`). A failed send loses that email only; the sign-up, checkout or return that caused it still succeeds.
@@ -248,7 +292,13 @@ Why this doesn't block anything else yet:
 
 To see an email arrive while testing: create the Resend account with the address you'll test with, and set `EMAIL_ARCHIVE_CC` to an empty value. Admin-facing emails then go nowhere. Put `arvrcommittee@gmail.com` back afterwards.
 
-For real members, the committee still has to pick a sender that doesn't need a domain. Not decided, and nothing is built yet. The likely candidate is **sending through the committee's Gmail** (`arvrcommittee@gmail.com`) over SMTP with an app password. That means 2-step verification on the account, a Gmail daily sending cap (fine at this volume), and swapping the Resend call in `send-email` for an SMTP client. Mail sent through Gmail's own servers as a `@gmail.com` address passes Gmail's checks; sending as `@gmail.com` through any *other* provider would fail DMARC and land in spam, so the "verify a single sender" options other providers offer are no substitute. Before building it, check the current Gmail limits and Supabase's Edge Function network limits: as far as we know, outbound ports 25 and 587 are blocked there, so plan on implicit TLS on port 465 (`smtp.gmail.com:465`).
+*Setup once there is a domain (no code change):* in Resend → Domains add a `mail.` subdomain of it (Synaptech uses `mail.synaptechuw.org`), add the DNS records Resend lists, wait for it to show verified, then set the Edge Function secret `EMAIL_FROM_ADDRESS` to an address on it (for example `VR/AR Hardware <hardware@mail.<domain>>`). The Resend API key and `EMAIL_ARCHIVE_CC` stay as they are. Afterwards, check `email_log` for `sent` rows, then schedule `send-scheduled-reminders` (checklist, Phase 2).
+
+*The alternative that was considered and not chosen (kept for reference).* Without a domain, the only candidate was **sending through the committee's Gmail** (`arvrcommittee@gmail.com`) over SMTP with an app password. That means 2-step verification on the account, a Gmail daily sending cap (fine at this volume), and swapping the Resend call in `send-email` for an SMTP client. Mail sent through Gmail's own servers as a `@gmail.com` address passes Gmail's checks; sending as `@gmail.com` through any *other* provider would fail DMARC and land in spam, so the "verify a single sender" options other providers offer are no substitute. Before building it, check the current Gmail limits and Supabase's Edge Function network limits: as far as we know, outbound ports 25 and 587 are blocked there, so plan on implicit TLS on port 465 (`smtp.gmail.com:465`).
+
+*What Synaptech's repo shows (checked 2026-11-13, `galaxygoldfish/synaptech-hms`).* It has the same Resend limitation and a domain-based answer to it: its README tells the operator to run `supabase secrets set EMAIL_FROM_ADDRESS=hardware@mail.synaptechuw.org`, a sender on a `mail.` subdomain of `synaptechuw.org`, which is how a Resend sending domain is normally set up. Its AGENTS.md says without a verified domain Resend delivers only to the account's own address, "fine for testing, not for real members", and rejects the CC too. The README is documentation, not proof of what the live secret holds, and secret values can't be read back from Supabase; the Resend dashboard's Domains page would show whether `mail.synaptechuw.org` is verified. So the one working example we have depends on a domain. There is no SMTP or Gmail path in it to copy.
+
+*Not confirmed:* the blocked ports 25 and 587 and the 465 plan. A search of Supabase's docs on 2026-11-13 didn't turn up a statement either way, so test a real connection from an Edge Function before committing to the approach.
 - **The new equipment categories.** Expect far fewer, mostly VR/AR. It blocks the categories item in Phase 2.
 - **Wording and assets:** the equipment contract, the room contract, the bylaws and terms, the logo and the welcome copy.
 
