@@ -5,6 +5,7 @@ import { preloadInBackground } from './lib/backgroundPreload'
 import { PageTransition } from './components/PageTransition'
 import { AppShellSkeleton } from './components/skeleton/AppShellSkeleton'
 import WelcomePage from './pages/WelcomePage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import ProfileSetupPage from './pages/ProfileSetupPage'
 import HomePage from './pages/HomePage'
 import BrowseInventoryPage from './pages/BrowseInventoryPage'
@@ -161,6 +162,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 // router.test.tsx fails if a route has no title here.
 export const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/', 'Sign in'],
+  ['/privacy', 'Privacy policy'],
   ['/setup', 'Set up your profile'],
   ['/home', 'Home'],
   ['/home/browse', 'Browse inventory'],
@@ -222,6 +224,8 @@ export function AppRouter() {
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
             <Route path="/" element={<PublicRoute><WelcomePage /></PublicRoute>} />
+            {/* Public to everyone, signed in or not: Google's consent screen links here. */}
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/setup" element={<SetupRoute><ProfileSetupPage /></SetupRoute>} />
             <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
             <Route path="/home/browse" element={<PrivateRoute><BrowseInventoryPage /></PrivateRoute>} />

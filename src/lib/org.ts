@@ -30,7 +30,7 @@ export interface OrgDocument {
 /** Agreed to at profile setup. The agreement isn't stored (see AGENTS.md). */
 export const PRIVACY_POLICY: OrgDocument = {
   title: 'Privacy Policy',
-  url: null,
+  url: '/privacy',
 }
 
 /** Linked from profile setup and the checkout return-date step. */

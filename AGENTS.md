@@ -116,6 +116,7 @@ select
 - [ ] `HELP_AND_SUPPORT_URL`: a chat invite, a form, or wherever members ask for help.
 - [ ] `DOCUMENTATION_URL`: general site documentation, shown as "View documentation" on the member home page.
 - [ ] `PRIVACY_POLICY` and `USAGE_POLICY`: the committee's bylaws and terms, with their titles. Agreeing to them stays **not stored**, deliberately.
+  - A public privacy policy page now exists at `/privacy` (`PrivacyPolicyPage.tsx`) and `PRIVACY_POLICY.url` points to it. Its text is adapted from Synaptech's published HMS policy. The retention periods, the 30-day response and breach times, and the email commitments are Synaptech's, carried over unchanged and not yet confirmed by the committee; only the 12-month audit-log pruning is enforced. Google also requires a homepage and a privacy policy URL before an External app can be published: use `https://vrar-portal.arvrcommittee.workers.dev` and `…/privacy` on the Branding page. The OAuth app is still in testing mode until that is done.
 - [x] `EMAIL_ARCHIVE_ADDRESS`: the committee's own inbox, `arvrcommittee@gmail.com` (it replaces Synaptech's `synaptechuw@gmail.com`). The same value is in the `EMAIL_ARCHIVE_CC` secret; change both together.
 - [ ] Confirm `APP_NAME` ("VR/AR Hardware Portal") and `ORG_NAME` ("VR/AR Committee"). If either changes, change `index.html`'s `<title>` too.
 
