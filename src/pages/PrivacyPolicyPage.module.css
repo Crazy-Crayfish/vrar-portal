@@ -1,0 +1,56 @@
+.policy {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  line-height: 1.6;
+}
+
+.policy h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  color: var(--brand-blue);
+}
+
+.policy h2 {
+  margin: 28px 0 8px;
+  font-size: 1.15rem;
+}
+
+.policy p,
+.policy ul {
+  margin: 0 0 12px;
+}
+
+.policy ul {
+  padding-left: 22px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  margin: 0 0 12px;
+}
+
+.policy table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.policy th,
+.policy td {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+}
+
+.policy th {
+  background: var(--row-bg);
+}
+
+@media (max-width: 640px) {
+  .policy {
+    padding: 20px 16px;
+  }
+}
