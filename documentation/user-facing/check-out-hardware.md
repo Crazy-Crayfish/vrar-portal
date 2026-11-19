@@ -26,7 +26,7 @@ This guide outlines how to check out hardware as a non-admin user.
 <img width="50%" src="../../public/docs/sign-the-hla.png"></img>
 
 
-5. Read & sign the Hardware Loan Agreement by scrolling in the document and typing your name in the signature field. Be sure to verify that the information in the document about you and the hardware you're checking out is accurate. Then press next.
+5. Read & sign the Hardware Loan Agreement by scrolling in the document and typing your name in the signature field. Be sure to verify that the information in the document about you and the hardware you're checking out is accurate. If the item has training material, open it from the link under the agreement, read it, and tick "I have read the training material"; you can't continue until you do. Then press next.
 
 
 <img width="50%" src="../../public/docs/add-pickup-avail.png"></img>

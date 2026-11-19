@@ -20,5 +20,5 @@ This functionality is available to non-admin users
 <img width="50%" src="../../public/docs/browse-inventory-detail.png"></img>
 
 
-5. In the item detail page you'll be able to view documentation if available, and initiate a checkout.
+5. In the item detail page you'll be able to view the item's training material if available, and initiate a checkout.
 6. The help & support link takes you to where the committee answers troubleshooting questions

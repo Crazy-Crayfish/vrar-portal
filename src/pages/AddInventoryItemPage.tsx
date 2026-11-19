@@ -374,7 +374,7 @@ export default function AddInventoryItemPage() {
         {!isConsumable && (
           <div className={styles.field}>
             <label className={styles.label} htmlFor="doc-link">
-              Link to item-specific documentation (OPTIONAL)
+              Link to item training material (OPTIONAL)
             </label>
             <input
               id="doc-link"

@@ -145,8 +145,8 @@ export default function BrowseInventoryItem() {
                     <span className={styles.linkRowIcon}>
                       <DocumentationIcon size={22} />
                     </span>
-                    <span className={styles.linkRowTextFull}>View item-specific documentation</span>
-                    <span className={styles.linkRowTextShort}>View documentation</span>
+                    <span className={styles.linkRowTextFull}>View training material for this item</span>
+                    <span className={styles.linkRowTextShort}>View training material</span>
                   </span>
                   <ChevronRightFilled size={9} color="#474747" />
                 </button>
