@@ -55,6 +55,7 @@ const loan = {
   signatureName: 'Bob Reyes',
   signatureDate: '2026-09-17',
   trainingConfirmedAt: null,
+  airtagName: null,
   reviewedAt: null,
   reviewNote: null,
   returnRequestedAt: null,

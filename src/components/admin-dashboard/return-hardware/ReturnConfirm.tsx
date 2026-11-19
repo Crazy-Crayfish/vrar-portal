@@ -167,6 +167,9 @@ export default function ReturnConfirm() {
               // act on, so the date says so itself.
               isAlert: bucketForLoanItem(detail) === 'overdue',
             },
+            // So the admin checks it's in the box. It's free for the next
+            // hand-off as soon as this return is recorded.
+            ...(detail.airtagName ? [{ label: 'AirTag to check for', value: detail.airtagName }] : []),
           ]}
           actionLabel={isSubmitting ? 'recording…' : 'mark as returned'}
           actionDisabled={isSubmitting || !profile}

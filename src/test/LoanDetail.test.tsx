@@ -67,6 +67,7 @@ function detail(overrides: Partial<AdminLoanRequestDetail> = {}): AdminLoanReque
     signatureName: 'Bob Reyes',
     signatureDate: '2026-09-08',
     trainingConfirmedAt: null,
+    airtagName: null,
     reviewedAt: null,
     reviewNote: null,
     returnRequestedAt: null,
@@ -192,6 +193,24 @@ describe('LoanDetail — what each state offers', () => {
 
     expect(await screen.findByText('Training')).toBeInTheDocument()
     expect(screen.getByText('Not recorded')).toBeInTheDocument()
+  })
+
+  it('shows which AirTag went out with the hardware', async () => {
+    vi.mocked(fetchLoanRequestItemDetail).mockResolvedValue({ ...activeLoan, airtagName: 'VRAR-01' })
+
+    renderDetail()
+
+    expect(await screen.findByText('AirTag')).toBeInTheDocument()
+    expect(screen.getByText('VRAR-01')).toBeInTheDocument()
+  })
+
+  it('has no AirTag row before the hand-off', async () => {
+    vi.mocked(fetchLoanRequestItemDetail).mockResolvedValue(detail())
+
+    renderDetail()
+
+    await screen.findByText('Training')
+    expect(screen.queryByText('AirTag')).not.toBeInTheDocument()
   })
 
   it('says when a returned loan came back and who received it', async () => {

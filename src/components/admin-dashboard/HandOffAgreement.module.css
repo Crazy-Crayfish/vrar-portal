@@ -371,6 +371,50 @@
   cursor: not-allowed;
 }
 
+/* ── AirTag picker ──────────────────────────────────────────── */
+
+.airtagCard {
+  width: min(52rem, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  background: #f4f4f4;
+  border-radius: 1.25rem;
+  padding: 1rem 1.75rem;
+  font-family: 'Rubik', sans-serif;
+}
+
+.airtagLabel {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1c2430;
+}
+
+.airtagSelect {
+  min-width: min(16rem, 100%);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #c9ccd2;
+  border-radius: 0.625rem;
+  background: #fff;
+  font: inherit;
+  font-size: 1rem;
+  color: #1c2430;
+}
+
+.airtagNote {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.airtagNote a {
+  color: #2f5fa0;
+}
+
 .inlineError {
   width: min(52rem, 100%);
   margin: 0 auto;

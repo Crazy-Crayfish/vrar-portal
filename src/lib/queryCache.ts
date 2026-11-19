@@ -24,6 +24,7 @@ export const CACHE_KEYS = {
   emailLog: 'emails:log',
   auditLog: 'audit-log',
   inventoryAudits: 'inventory-audits:list',
+  airtags: 'airtags:list',
   /** Followed by an equipment id: a checkout's add-ons and stock, fetched
       from the catalog before opening the confirm step. */
   checkoutStart: 'equipment:checkout-start:',

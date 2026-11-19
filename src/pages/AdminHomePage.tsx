@@ -107,6 +107,10 @@ export default function AdminHomePage() {
       navigate('/adminHome/inventory/audit')
       return
     }
+    if (actionId === 'airtags') {
+      navigate('/adminHome/airtags')
+      return
+    }
     if (actionId === 'app-audit-log') {
       navigate('/adminHome/audit-log')
       return

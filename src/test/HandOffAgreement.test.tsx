@@ -10,6 +10,7 @@ import {
 } from '../lib/loanRequests'
 import { fetchProfileById } from '../lib/members'
 import { fetchEquipment } from '../lib/inventory'
+import { fetchAirTags, type AirTag } from '../lib/airtags'
 import HandOffAgreement from '../components/admin-dashboard/HandOffAgreement'
 
 vi.mock('../context/AuthContext', () => ({ useAuth: vi.fn() }))
@@ -38,6 +39,19 @@ vi.mock('../lib/inventory', async () => {
   const actual = await vi.importActual<typeof import('../lib/inventory')>('../lib/inventory')
   return { ...actual, fetchEquipment: vi.fn() }
 })
+vi.mock('../lib/airtags', async () => {
+  const actual = await vi.importActual<typeof import('../lib/airtags')>('../lib/airtags')
+  return { ...actual, fetchAirTags: vi.fn() }
+})
+
+const freeTag: AirTag = { id: 'tag-1', name: 'VRAR-01', note: null, createdAt: '', out: null }
+const busyTag: AirTag = {
+  id: 'tag-2',
+  name: 'VRAR-02',
+  note: null,
+  createdAt: '',
+  out: { itemId: 'item-9', itemName: 'Quest 3', memberName: 'Someone Else' },
+}
 
 const mockSession = { user: { id: 'admin-1', email: 'admin@uw.edu' } } as unknown as Session
 
@@ -67,6 +81,7 @@ const loan: AdminLoanRequestDetail = {
   signatureName: 'Bob Reyes',
   signatureDate: '2026-09-08',
   trainingConfirmedAt: null,
+  airtagName: null,
   reviewedAt: null,
   reviewNote: null,
   returnRequestedAt: null,
@@ -115,6 +130,7 @@ beforeEach(() => {
   vi.mocked(fetchProfileById).mockReset().mockResolvedValue(member)
   vi.mocked(fetchEquipment).mockReset().mockResolvedValue(equipment)
   vi.mocked(handOffLoanRequestItem).mockReset().mockResolvedValue(undefined)
+  vi.mocked(fetchAirTags).mockReset().mockResolvedValue([freeTag, busyTag])
   vi.mocked(useAuth).mockReturnValue({
     session: mockSession,
     profile: adminProfile,
@@ -191,7 +207,27 @@ describe('HandOffAgreement', () => {
     expect(submit).toBeDisabled()
 
     await userEvent.type(screen.getByPlaceholderText('Your full legal name'), 'Ada Admin')
+    // Still needs an AirTag.
+    expect(submit).toBeDisabled()
+    await userEvent.selectOptions(screen.getByLabelText('AirTag going out with it'), 'tag-1')
     expect(submit).toBeEnabled()
+  })
+
+  it('offers only the AirTags that are free', async () => {
+    renderHandOff()
+
+    const picker = await screen.findByLabelText('AirTag going out with it')
+    expect(within(picker).getByRole('option', { name: 'VRAR-01' })).toBeInTheDocument()
+    expect(within(picker).queryByRole('option', { name: 'VRAR-02' })).not.toBeInTheDocument()
+  })
+
+  it('says how to get one when no AirTag is free', async () => {
+    vi.mocked(fetchAirTags).mockResolvedValue([busyTag])
+    renderHandOff()
+
+    expect(await screen.findByText(/none is free/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /add one under airtags/i })).toHaveAttribute('href', '/adminHome/airtags')
+    expect(screen.getByLabelText('AirTag going out with it')).toBeDisabled()
   })
 
 
@@ -214,6 +250,7 @@ describe('HandOffAgreement', () => {
   it('records the hand-off under the typed name, not the signed-in account', async () => {
     renderHandOff()
     await userEvent.type(await screen.findByPlaceholderText('Your full legal name'), 'Casey Officer')
+    await userEvent.selectOptions(screen.getByLabelText('AirTag going out with it'), 'tag-1')
     await userEvent.click(screen.getByRole('button', { name: 'next' }))
 
     await waitFor(() => expect(handOffLoanRequestItem).toHaveBeenCalled())
@@ -224,6 +261,7 @@ describe('HandOffAgreement', () => {
     // which needn't be whoever happens to be logged in.
     expect(call.adminName).toBe('Casey Officer')
     expect(call.attestedAt).toBeInstanceOf(Date)
+    expect(call.airtagId).toBe('tag-1')
 
     expect(await screen.findByText('Loan detail')).toBeInTheDocument()
   })
@@ -234,6 +272,7 @@ describe('HandOffAgreement', () => {
 
     renderHandOff()
     await userEvent.type(await screen.findByPlaceholderText('Your full legal name'), 'Ada Admin')
+    await userEvent.selectOptions(screen.getByLabelText('AirTag going out with it'), 'tag-1')
     await userEvent.click(screen.getByRole('button', { name: 'next' }))
 
     expect(await screen.findByText(/could not record the hand-off/i)).toBeInTheDocument()
