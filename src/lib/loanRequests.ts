@@ -3,6 +3,7 @@ import { fetchAvailableEquipmentUnit } from './inventory'
 import { isApprovedAgreementPath, restampAgreementSerial, stampApprovedAgreement } from './loanAgreementApproval'
 import { CACHE_KEYS, invalidate, peekValue, refresh, DISPLAY_REUSE_MS } from './queryCache'
 import { normalizeSerialNumber } from './serialNumber'
+import { isAirTagInUse } from './airtags'
 import type { LoanRequest, LoanRequestItemRole, LoanRequestStatus } from '../types'
 
 const LOAN_AGREEMENTS_BUCKET = 'loan-agreements'
@@ -258,6 +259,9 @@ export interface AdminLoanRequestDetail {
   /** When the borrower ticked the training confirmation. Null when the item
       had no training link, or was requested before 20261118010000. */
   trainingConfirmedAt: string | null
+  /** The AirTag that went out with it, by its name at hand-off. Null before
+      hand-off, and for hand-offs recorded before 20261118020000. */
+  airtagName: string | null
   reviewedAt: string | null
   reviewNote: string | null
   /** Set when the member asked to give it back; cleared only by checking in. */
@@ -286,7 +290,7 @@ export async function fetchLoanRequestItemDetail(itemId: string): Promise<AdminL
   const { data: item, error: itemError } = await supabase
     .from('loan_request_items')
     .select(
-      'id, loan_request_id, equipment_id, equipment_unit_id, item_role, return_date, signed_agreement_path, signature_name, signature_date, training_confirmed_at, return_requested_at, returned_at, returned_by',
+      'id, loan_request_id, equipment_id, equipment_unit_id, item_role, return_date, signed_agreement_path, signature_name, signature_date, training_confirmed_at, airtag_name, return_requested_at, returned_at, returned_by',
     )
     .eq('id', itemId)
     .single()
@@ -406,6 +410,7 @@ export async function fetchLoanRequestItemDetail(itemId: string): Promise<AdminL
     signatureName: item.signature_name,
     signatureDate: item.signature_date,
     trainingConfirmedAt: item.training_confirmed_at ?? null,
+    airtagName: item.airtag_name ?? null,
     reviewedAt: request.reviewed_at,
     reviewNote: request.review_note,
     returnRequestedAt: item.return_requested_at,
@@ -493,6 +498,12 @@ export interface HandOffLoanRequestItemInput {
    * database timestamp either way.
    */
   attestedAt?: Date
+  /**
+   * The AirTag going out with the hardware (airtags.id). Required by the
+   * hand-off screen; optional here only so a hand-off that already has one
+   * isn't forced to pick again.
+   */
+  airtagId?: string | null
 }
 
 /**
@@ -530,7 +541,15 @@ export async function handOffLoanRequestItem(input: HandOffLoanRequestItemInput)
     invalidate(CACHE_KEYS.adminLoans)
     // Checked-out counts and unit statuses on the inventory screens.
     invalidate(CACHE_KEYS.equipmentAll)
+    // Which AirTags are out.
+    invalidate(CACHE_KEYS.airtags)
   }
+}
+
+function airtagConflict(error: unknown): LoanConflictError | null {
+  return isAirTagInUse(error)
+    ? new LoanConflictError('That AirTag is already out with another loan. Pick a different one.')
+    : null
 }
 
 async function handOff(input: HandOffLoanRequestItemInput): Promise<void> {
@@ -580,14 +599,26 @@ async function handOff(input: HandOffLoanRequestItemInput): Promise<void> {
     // Compare-and-set: only repoint the item if it still points at the
     // unstamped agreement read above. If another admin got there first,
     // nothing matches and this admin is told so.
+    // The AirTag lands in the same write, so a hand-off is never recorded
+    // without it, and the database's guard refuses one already out.
     const { data: claimed, error: itemUpdateError } = await supabase
       .from('loan_request_items')
-      .update({ signed_agreement_path: approvedPath })
+      .update({
+        signed_agreement_path: approvedPath,
+        ...(input.airtagId ? { airtag_id: input.airtagId } : {}),
+      })
       .eq('id', input.itemId)
       .eq('signed_agreement_path', item.signed_agreement_path)
       .select('id')
-    if (itemUpdateError) throw itemUpdateError
+    if (itemUpdateError) throw airtagConflict(itemUpdateError) ?? itemUpdateError
     if (!claimed || claimed.length === 0) throw await alreadyHandedOff(item.loan_request_id)
+  } else if (input.airtagId) {
+    // Finishing an earlier attempt that got as far as the certificate.
+    const { error: airtagError } = await supabase
+      .from('loan_request_items')
+      .update({ airtag_id: input.airtagId })
+      .eq('id', input.itemId)
+    if (airtagError) throw airtagConflict(airtagError) ?? airtagError
   }
 
   const { data: approved, error: requestUpdateError } = await supabase

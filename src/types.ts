@@ -23,7 +23,8 @@ export type IconKey =
   | "mail-admin"
   | "mail-log"
   | "audit"
-  | "audit-log";
+  | "audit-log"
+  | "airtag";
 
 export interface ActionItem {
   id: string;

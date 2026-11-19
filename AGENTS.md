@@ -51,8 +51,8 @@ The user says the committee's units carry the **beige** UW tags (departmental tr
 
 - *Needs input from the committee:* `org.ts` links (help, documentation, usage policy), logo and welcome copy, both contracts' wording, the category list, whether a room booking includes equipment, a scanned beige tag, and confirmation of the privacy-policy statements above.
 - *Needs a domain:* real-member email, then scheduling `send-scheduled-reminders`.
-- *Needs a user-approved design first (don't start without one):* training confirmation, AirTag at hand-off, suggested projects, room reservations.
-- *Small, no input needed:* check `record_inventory_audit` for a missing admin check and, if needed, revoke `anon` execute in a new migration (the advisor flagged it on 2026-11-12).
+- *Needs a user-approved design first (don't start without one):* suggested projects, room reservations. (Training confirmation and AirTag at hand-off were designed and built on 2026-11-18: PRs #16 and #17.)
+- ~~*Small, no input needed:* check `record_inventory_audit`.~~ Checked 2026-11-18: its body already refuses non-admins; #15 revokes `anon` execute anyway. Re-check the security advisor after it merges.
 
 #### Working rules and gotchas
 
@@ -72,7 +72,7 @@ Security advisor, 2026-11-12: `record_inventory_audit` is executable by signed-o
 
 **Merged on 2026-11-12:** #9 (remove label making), #10 (remove Discord) and #11 (lookups stop assuming `SYN-`), each as a merge commit. #12 (scan-first UW tag entry, retargeted to `main`) merges after this; its conflicts with #9 were resolved on its branch. None of them touches `supabase/`, so no deploy ran.
 
-**Test flake to know about.** Two `ReturnAvailability` tests (and sometimes `EditAvailabilityModal`) exceed Vitest's 5s default in a full run and pass when run alone. They are not related to these PRs; consider raising their timeout or lightening the availability grid in tests.
+**Test flake to know about.** *Update 2026-11-18:* `EditAvailabilityModal` and `ReturnAvailability` also fail outright in the evening, Pacific time: the tests take "today" from `new Date().toISOString()` (UTC) while the grid uses the local date. They pass with `TZ=UTC`. Fix the tests to use the local date. The original note: Two `ReturnAvailability` tests (and sometimes `EditAvailabilityModal`) exceed Vitest's 5s default in a full run and pass when run alone. They are not related to these PRs; consider raising their timeout or lightening the availability grid in tests.
 
 **Decisions the user has made.** Scan-first tag entry is approved *as a preliminary choice from web research only* (see [UW tag research](#uw-tag-research-unverified)). Placeholder logic for the UW barcode is fine until a real tag is available. The user asked to be paused on any key design point they haven't approved.
 
@@ -238,10 +238,12 @@ Found on the web on 2026-11-12, **not checked against a physical tag**. Treat ev
 - [x] Stored as `loan_request_items.training_confirmed_at` ([`20261118010000_loan_item_training_confirmation.sql`](supabase/migrations/20261118010000_loan_item_training_confirmation.sql)), the time of the tick, written in the same insert in `submitLoanRequest` as `signature_name`/`signature_date`. Recorded, not enforced by the database. The member update guard already stops a member changing it later.
 - [x] The admin loan detail screen shows a **Training** row for hardware: "Confirmed <date>", or "Not recorded" (no training link at the time, or requested before the column existed).
 
-**AirTag at hand-off**
-- [ ] During the hand-off, the admin records which AirTag went with the hardware. It's a new column on `loan_request_items`, shown on the loan detail screen.
-- [ ] Optional: the return flow prompts the admin to check the AirTag came back.
-- [ ] There is no AirTag API. Tracking happens in Find My; the app only records which tag went where.
+**AirTag at hand-off** (decided 2026-11-18: a pool of AirTags, picked at hand-off, **required**)
+- [x] A pool of the committee's AirTags in a new `airtags` table (name as in Find My, unique ignoring case; optional note), managed on the admin **AirTags** screen (`/adminHome/airtags`, under Inventory on the admin home). An AirTag that's out can't be removed. [`20261118020000_airtags.sql`](supabase/migrations/20261118020000_airtags.sql).
+- [x] The hand-off sign-off screen (both routes) has a required **AirTag going out with it** picker listing only free AirTags. `handOffLoanRequestItem` writes `loan_request_items.airtag_id` in the same compare-and-set update that claims the item. The database copies the name into `airtag_name` (so a loan keeps it after a rename or removal), refuses an AirTag already out (`airtag_in_use`, locked on the AirTag row so two admins can't both win), and refuses a non-admin setting one (members can insert their own items).
+- [x] "Out" is derived, like unit availability: on an item with `returned_at` null whose request is pending or approved. Recording the return, or a cancellation or denial, frees it with no extra write.
+- [x] The loan detail screen shows an **AirTag** row once the request is approved ("Not recorded" for hand-offs before the migration). The return confirm screen shows **AirTag to check for**. The audit log records `airtag.created/updated/deleted` and `loan_item.airtag_recorded`.
+- There is no AirTag API. Tracking happens in Find My; the app only records which tag went where.
 
 **Other equipment items**
 - [ ] Suggested projects: a new field on `equipment`, edited on the add/edit item pages and shown in the catalog.

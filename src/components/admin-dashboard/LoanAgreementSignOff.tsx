@@ -12,6 +12,8 @@ import {
 } from '../../lib/loanRequests'
 import { fetchEquipment } from '../../lib/inventory'
 import { fetchProfileById } from '../../lib/members'
+import { fetchAirTags, type AirTag } from '../../lib/airtags'
+import { Link } from 'react-router-dom'
 import type { Equipment } from '../../types'
 import type { Profile } from '../../types/index'
 import type { UserProfile } from '../../types'
@@ -102,6 +104,10 @@ export function LoanAgreementSignOff({
   // Deliberately blank: typing it is the attestation, the same way the
   // borrower types theirs in section 9 rather than having it filled in.
   const [managerName, setManagerName] = useState('')
+  // Required, and not preselected: picking it is the admin saying which
+  // AirTag they're putting in the box.
+  const [airtags, setAirtags] = useState<AirTag[]>([])
+  const [airtagId, setAirtagId] = useState('')
 
   const [isSubmitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -117,14 +123,17 @@ export function LoanAgreementSignOff({
         // The agreement needs more of the borrower and the product than the
         // loan record carries — their student ID, phone and address, and the
         // product's replacement value, all of which are printed on it.
-        const [memberProfile, equipmentRow] = await Promise.all([
+        const [memberProfile, equipmentRow, airtagList] = await Promise.all([
           fetchProfileById(loan.memberId),
           fetchEquipment(loan.equipmentId),
+          // Fresh: which ones are free decides what can be picked.
+          fetchAirTags({ fresh: true }),
         ])
         if (cancelled) return
         setDetail(loan)
         setMember(memberProfile)
         setEquipment(equipmentRow)
+        setAirtags(airtagList)
       })
       .catch((fetchError) => {
         // eslint-disable-next-line no-console
@@ -150,7 +159,14 @@ export function LoanAgreementSignOff({
     }
   }, [profile])
 
-  const canSubmit = Boolean(managerName.trim() && receivedDate && detail && profile && !isSubmitting)
+  // Free ones, plus one already on this item (an earlier attempt that
+  // recorded it and then failed further on).
+  const freeAirtags = useMemo(
+    () => airtags.filter((tag) => !tag.out || tag.out.itemId === detail?.id),
+    [airtags, detail?.id],
+  )
+
+  const canSubmit = Boolean(managerName.trim() && receivedDate && airtagId && detail && profile && !isSubmitting)
 
   function handleLogOut() {
     setProfileOpen(false)
@@ -171,6 +187,7 @@ export function LoanAgreementSignOff({
         // goes on the certificate.
         adminName: managerName.trim(),
         attestedAt: attestedAt(receivedDate, receivedTime),
+        airtagId,
       })
       onRecorded(detail)
     } catch (handOffError) {
@@ -264,6 +281,32 @@ export function LoanAgreementSignOff({
                   onManagerNameChange: setManagerName,
                 }}
               />
+            </div>
+
+            <div className={styles.airtagCard}>
+              <label className={styles.airtagLabel} htmlFor="handoff-airtag">
+                AirTag going out with it
+              </label>
+              <select
+                id="handoff-airtag"
+                className={styles.airtagSelect}
+                value={airtagId}
+                onChange={(event) => setAirtagId(event.target.value)}
+                disabled={freeAirtags.length === 0}
+              >
+                <option value="">{freeAirtags.length === 0 ? 'No free AirTags' : 'Choose an AirTag'}</option>
+                {freeAirtags.map((tag) => (
+                  <option key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </option>
+                ))}
+              </select>
+              {freeAirtags.length === 0 && (
+                <p className={styles.airtagNote}>
+                  Every hand-off needs an AirTag, and none is free.{' '}
+                  <Link to="/adminHome/airtags">Add one under AirTags</Link>, or take one back with a returned loan.
+                </p>
+              )}
             </div>
 
             {submitError && <p className={styles.inlineError} role="alert">{submitError}</p>}

@@ -383,6 +383,10 @@ export default function LoanDetail() {
               {detail.returnDate && <DetailRow label="Return date" value={formatCalendarDate(detail.returnDate)} />}
               {detail.reviewedAt && <DetailRow label="Checked out" value={formatDate(detail.reviewedAt)} />}
               {detail.reviewerName && <DetailRow label="Checked out by" value={detail.reviewerName} />}
+              {/* Once it's out: the AirTag is picked at hand-off. */}
+              {detail.signedAgreementPath && detail.status === 'approved' && (
+                <DetailRow label="AirTag" value={detail.airtagName ?? 'Not recorded'} />
+              )}
               {/* "Returned on" rather than "Returned": the status badge above
                   already says "Returned", and two different meanings behind
                   one word is a needless re-read — more so read aloud. */}

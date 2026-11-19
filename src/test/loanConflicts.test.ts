@@ -129,6 +129,30 @@ describe('handOffLoanRequestItem', () => {
     expect(updatesTo('loan_requests')[0].values).toMatchObject({ status: 'approved', reviewed_by: 'admin-2' })
   })
 
+  it('records the AirTag in the same write that claims the item', async () => {
+    respond = world({ itemPath: ORIGINAL, status: 'pending' })
+
+    await handOffLoanRequestItem({ ...input, airtagId: 'tag-1' })
+
+    const claims = updatesTo('loan_request_items')
+    expect(claims).toHaveLength(1)
+    expect(claims[0].values).toMatchObject({ signed_agreement_path: STAMPED, airtag_id: 'tag-1' })
+  })
+
+  it('says so when the AirTag went out with another loan first', async () => {
+    const base = world({ itemPath: ORIGINAL, status: 'pending' })
+    respond = (query) =>
+      query.table === 'loan_request_items' && query.op === 'update'
+        ? { data: null, error: { message: 'airtag_in_use', code: 'P0001' } }
+        : base(query)
+
+    const attempt = handOffLoanRequestItem({ ...input, airtagId: 'tag-1' })
+
+    await expect(attempt).rejects.toBeInstanceOf(LoanConflictError)
+    await expect(attempt).rejects.toThrow('That AirTag is already out with another loan')
+    expect(updatesTo('loan_requests')).toHaveLength(0)
+  })
+
   // The case this guards: a second admin, working from a screen that still
   // showed the request as waiting, after a colleague has handed it over.
   it('refuses an item a colleague has already handed off, before writing anything', async () => {

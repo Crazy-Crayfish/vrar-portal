@@ -13,6 +13,7 @@ import {
   ChevronRightFilled,
   ScanIconFilled,
   AuditLogIconFilled,
+  AirTagIconFilled,
 } from "./icons";
 import styles from "./AdminHome.module.css";
 
@@ -34,6 +35,7 @@ const actionIcons: Record<IconKey, ReactElement> = {
   "mail-log": <MailReplyIconFilled size={22} className={styles.actionRowIcon} />,
   audit: <ScanIconFilled size={20} className={styles.actionRowIcon} />,
   "audit-log": <AuditLogIconFilled size={20} className={styles.actionRowIcon} />,
+  airtag: <AirTagIconFilled size={20} className={styles.actionRowIcon} />,
 }
 
 export function ActionList({ groups, showCategoryLabels = true, onSelect }: ActionListProps) {

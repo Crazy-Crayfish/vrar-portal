@@ -50,6 +50,7 @@ const detail: AdminLoanRequestDetail = {
   signatureName: 'Bob Reyes',
   signatureDate: '2026-09-01',
   trainingConfirmedAt: null,
+  airtagName: null,
   reviewedAt: '2026-09-02T10:00:00Z',
   reviewNote: null,
   returnRequestedAt: null,
@@ -101,6 +102,14 @@ describe('ReturnConfirm', () => {
     expect(screen.getByText('SYN-HJXPP41T5')).toBeInTheDocument()
     expect(screen.getByText('Bob Reyes')).toBeInTheDocument()
     expect(screen.getByText('Returned by')).toBeInTheDocument()
+  })
+
+  it('names the AirTag to check for when one went out with it', async () => {
+    vi.mocked(fetchLoanRequestItemDetail).mockResolvedValue({ ...detail, airtagName: 'VRAR-01' })
+    renderConfirm()
+
+    expect(await screen.findByText('AirTag to check for')).toBeInTheDocument()
+    expect(screen.getByText('VRAR-01')).toBeInTheDocument()
   })
 
   it('records the return under the signed-in admin', async () => {

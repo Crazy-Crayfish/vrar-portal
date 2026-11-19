@@ -23,6 +23,7 @@ import AdminHardwareLoansPage from './pages/AdminHardwareLoansPage'
 import AdminLoanDetailPage from './pages/AdminLoanDetailPage'
 import AdminHandOffScanPage from './pages/AdminHandOffScanPage'
 import AdminViewMembersPage from './pages/AdminViewMembersPage'
+import AdminAirTagsPage from './pages/AdminAirTagsPage'
 import AdminManageInventoryPage from './pages/AdminManageInventoryPage'
 import ManageInventoryItemPage from './pages/ManageInventoryItemPage'
 import AdminMemberDetailPage from './pages/AdminMemberDetailPage'
@@ -185,6 +186,7 @@ export const ROUTE_TITLES: [pattern: string, title: string][] = [
   ['/adminHome/members/:id', 'Member details'],
   ['/adminHome/audit-log', 'Audit log'],
   ['/adminHome/inventory', 'Manage inventory'],
+  ['/adminHome/airtags', 'AirTags'],
   ['/adminHome/inventory/audit', 'Inventory audits'],
   ['/adminHome/inventory/audit/new', 'New inventory audit'],
   ['/adminHome/inventory/audit/:id', 'Inventory audit report'],
@@ -245,6 +247,7 @@ export function AppRouter() {
             <Route path="/adminHome/loans/:id/hand-off" element={<AdminRoute><AdminHandOffScanPage /></AdminRoute>} />
             <Route path="/adminHome/loans/:id/hand-off/agreement" element={<AdminRoute><AdminHandOffPage /></AdminRoute>} />
             <Route path="/adminHome/members" element={<AdminRoute><AdminViewMembersPage /></AdminRoute>} />
+            <Route path="/adminHome/airtags" element={<AdminRoute><AdminAirTagsPage /></AdminRoute>} />
             <Route path="/adminHome/audit-log" element={<AdminRoute><AdminAuditLogPage /></AdminRoute>} />
             <Route path="/adminHome/inventory" element={<AdminRoute><AdminManageInventoryPage /></AdminRoute>} />
             <Route path="/adminHome/inventory/audit" element={<AdminRoute><AdminInventoryAuditPage /></AdminRoute>} />
