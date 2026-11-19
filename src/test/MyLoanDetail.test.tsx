@@ -257,7 +257,7 @@ describe('MyLoanDetail', () => {
     renderDetail()
 
     await userEvent.click(
-      await screen.findByRole('button', { name: /view item-specific documentation/i }),
+      await screen.findByRole('button', { name: /view training material for this item/i }),
     )
 
     expect(window.open).toHaveBeenCalledWith(
@@ -273,7 +273,7 @@ describe('MyLoanDetail', () => {
 
     await screen.findByText(item().itemName)
     expect(
-      screen.queryByRole('button', { name: /view item-specific documentation/i }),
+      screen.queryByRole('button', { name: /view training material for this item/i }),
     ).not.toBeInTheDocument()
   })
 

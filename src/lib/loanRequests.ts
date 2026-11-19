@@ -17,6 +17,11 @@ export interface SubmitLoanRequestItemInput {
   signatureName: string | null
   signatureDate: string | null // ISO date
   /**
+   * When the borrower ticked "I have read the training material": hardware
+   * with a training link only, null otherwise.
+   */
+  trainingConfirmedAt?: string | null // ISO timestamp
+  /**
    * The unit the borrower signed the agreement for — hardware only. Omit to
    * have one picked at submission.
    */
@@ -131,6 +136,7 @@ async function submit(input: SubmitLoanRequestInput): Promise<LoanRequest> {
           signed_agreement_path: signedAgreementPath,
           signature_name: item.isHardware ? item.signatureName : null,
           signature_date: item.isHardware ? item.signatureDate : null,
+          training_confirmed_at: item.isHardware ? (item.trainingConfirmedAt ?? null) : null,
         }
       }),
     )
@@ -249,6 +255,9 @@ export interface AdminLoanRequestDetail {
       the signature was stored — see the 20260923000000 migration. */
   signatureName: string | null
   signatureDate: string | null
+  /** When the borrower ticked the training confirmation. Null when the item
+      had no training link, or was requested before 20261118010000. */
+  trainingConfirmedAt: string | null
   reviewedAt: string | null
   reviewNote: string | null
   /** Set when the member asked to give it back; cleared only by checking in. */
@@ -277,7 +286,7 @@ export async function fetchLoanRequestItemDetail(itemId: string): Promise<AdminL
   const { data: item, error: itemError } = await supabase
     .from('loan_request_items')
     .select(
-      'id, loan_request_id, equipment_id, equipment_unit_id, item_role, return_date, signed_agreement_path, signature_name, signature_date, return_requested_at, returned_at, returned_by',
+      'id, loan_request_id, equipment_id, equipment_unit_id, item_role, return_date, signed_agreement_path, signature_name, signature_date, training_confirmed_at, return_requested_at, returned_at, returned_by',
     )
     .eq('id', itemId)
     .single()
@@ -396,6 +405,7 @@ export async function fetchLoanRequestItemDetail(itemId: string): Promise<AdminL
     signedAgreementPath: item.signed_agreement_path,
     signatureName: item.signature_name,
     signatureDate: item.signature_date,
+    trainingConfirmedAt: item.training_confirmed_at ?? null,
     reviewedAt: request.reviewed_at,
     reviewNote: request.review_note,
     returnRequestedAt: item.return_requested_at,

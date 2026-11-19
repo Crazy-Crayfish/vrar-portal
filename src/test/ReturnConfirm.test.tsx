@@ -49,6 +49,7 @@ const detail: AdminLoanRequestDetail = {
   signedAgreementPath: 'bob/req-1/eq-1.pdf',
   signatureName: 'Bob Reyes',
   signatureDate: '2026-09-01',
+  trainingConfirmedAt: null,
   reviewedAt: '2026-09-02T10:00:00Z',
   reviewNote: null,
   returnRequestedAt: null,

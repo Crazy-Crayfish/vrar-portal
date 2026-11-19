@@ -273,7 +273,7 @@ export default function CheckoutConfirmHardware() {
                 >
                   <span className={styles.linkRowLeft}>
                     <DocumentationIcon size={22} />
-                    View item-specific documentation
+                    View training material for this item
                   </span>
                   <ChevronRightFilled size={9} color="#474747" />
                 </button>

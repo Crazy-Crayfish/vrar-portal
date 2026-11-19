@@ -17,6 +17,7 @@ interface CheckoutState {
   signedAgreements?: Record<string, File>
   signedNames?: Record<string, string>
   signedDates?: Record<string, string>
+  trainingConfirmedAt?: Record<string, string>
   unitIds?: Record<string, string | null>
 }
 
@@ -32,6 +33,7 @@ function readCheckoutState(state: unknown): CheckoutState | null {
     signedAgreements: value.signedAgreements,
     signedNames: value.signedNames,
     signedDates: value.signedDates,
+    trainingConfirmedAt: value.trainingConfirmedAt,
     unitIds: value.unitIds,
   }
 }
@@ -134,6 +136,7 @@ export default function CheckoutAvailability() {
       signedAgreementFile: checkoutState.signedAgreements?.[item.id] ?? null,
       signatureName: checkoutState.signedNames?.[item.id] ?? null,
       signatureDate: checkoutState.signedDates?.[item.id] ?? null,
+      trainingConfirmedAt: checkoutState.trainingConfirmedAt?.[item.id] ?? null,
       equipmentUnitId: checkoutState.unitIds?.[item.id] ?? null,
     }))
 

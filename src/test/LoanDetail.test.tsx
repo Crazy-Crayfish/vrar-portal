@@ -66,6 +66,7 @@ function detail(overrides: Partial<AdminLoanRequestDetail> = {}): AdminLoanReque
     signedAgreementPath: 'bob/req-1/eq-1.pdf',
     signatureName: 'Bob Reyes',
     signatureDate: '2026-09-08',
+    trainingConfirmedAt: null,
     reviewedAt: null,
     reviewNote: null,
     returnRequestedAt: null,
@@ -173,6 +174,24 @@ describe('LoanDetail — what each state offers', () => {
     renderDetail()
 
     expect(await screen.findByText('Overdue')).toBeInTheDocument()
+  })
+
+  it('shows when the borrower confirmed the training material', async () => {
+    vi.mocked(fetchLoanRequestItemDetail).mockResolvedValue(detail({ trainingConfirmedAt: '2026-09-08T17:29:00Z' }))
+
+    renderDetail()
+
+    expect(await screen.findByText('Training')).toBeInTheDocument()
+    expect(screen.getByText(/^Confirmed /)).toBeInTheDocument()
+  })
+
+  it('says "Not recorded" for training on an item with no confirmation', async () => {
+    vi.mocked(fetchLoanRequestItemDetail).mockResolvedValue(detail())
+
+    renderDetail()
+
+    expect(await screen.findByText('Training')).toBeInTheDocument()
+    expect(screen.getByText('Not recorded')).toBeInTheDocument()
   })
 
   it('says when a returned loan came back and who received it', async () => {

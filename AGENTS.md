@@ -232,11 +232,11 @@ Found on the web on 2026-11-12, **not checked against a physical tag**. Treat ev
 - [ ] Section 6's sliding liability scale uses each item's replacement value. Keep or replace it according to the new terms.
 - [ ] Reword the Certificate of Approval page in `loanAgreementApproval.ts`.
 
-**Training**
-- [ ] The training link reuses `documentation_url`. Relabel it as training in the add/edit item pages, the catalog item page, the checkout confirm step and the member's loan detail. Add a separate `training_url` only if documentation and training material are kept apart.
-- [ ] A tick-box in checkout confirming the member has read the training material. It must be ticked to continue, like the contract.
-- [ ] Store the confirmation the same way as the contract signature: a new column on `loan_request_items` (e.g. `training_confirmed_at`), written in the same insert in `submitLoanRequest` that stores `signature_name` and `signature_date`. The database records it and doesn't enforce it, as with the contract.
-- [ ] Show it on the loan detail screen next to the signed agreement, with "Not recorded" for items submitted before the column existed.
+**Training** (decided 2026-11-18: reuse `documentation_url`, no separate `training_url`)
+- [x] The training link reuses `documentation_url`, relabelled as training on the add/edit item pages, the catalog item page, the checkout confirm step, the member's loan detail and the audit log's field name.
+- [x] A tick-box on the checkout's **signing** step, under each hardware item's agreement that has a training link: "I have read the training material for <item>", with a link to it. The item's tab isn't complete, and **next** stays disabled, until it's ticked. Items without a training link show no tick-box. (Not on the confirm step: that step is skipped for items with no add-ons.)
+- [x] Stored as `loan_request_items.training_confirmed_at` ([`20261118010000_loan_item_training_confirmation.sql`](supabase/migrations/20261118010000_loan_item_training_confirmation.sql)), the time of the tick, written in the same insert in `submitLoanRequest` as `signature_name`/`signature_date`. Recorded, not enforced by the database. The member update guard already stops a member changing it later.
+- [x] The admin loan detail screen shows a **Training** row for hardware: "Confirmed <date>", or "Not recorded" (no training link at the time, or requested before the column existed).
 
 **AirTag at hand-off**
 - [ ] During the hand-off, the admin records which AirTag went with the hardware. It's a new column on `loan_request_items`, shown on the loan detail screen.

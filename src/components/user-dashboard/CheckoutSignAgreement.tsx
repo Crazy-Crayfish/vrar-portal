@@ -71,6 +71,9 @@ export default function CheckoutSignAgreement() {
   const [isLoading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [signatures, setSignatures] = useState<Record<string, SignatureEntry>>({})
+  // When the borrower ticked "I have read the training material", per item.
+  // Only items with a training link (documentation_url) ask for it.
+  const [trainingConfirmedAt, setTrainingConfirmedAt] = useState<Record<string, string>>({})
   const [activeItemId, setActiveItemId] = useState<string | null>(null)
   const [isSubmitting, setSubmitting] = useState(false)
 
@@ -152,10 +155,23 @@ export default function CheckoutSignAgreement() {
     !isSubmitting &&
     hardwareItems.length > 0 &&
     unavailableItems.length === 0 &&
-    hardwareItems.every((item) => {
-      const entry = signatures[item.id]
-      return Boolean(entry && entry.name.trim() && entry.date)
+    hardwareItems.every((item) => isItemComplete(item))
+
+  function isItemComplete(item: Equipment): boolean {
+    const entry = signatures[item.id]
+    const signed = Boolean(entry && entry.name.trim() && entry.date)
+    const trained = !item.documentation_url || Boolean(trainingConfirmedAt[item.id])
+    return signed && trained
+  }
+
+  function setTrainingConfirmed(itemId: string, confirmed: boolean) {
+    setTrainingConfirmedAt((current) => {
+      const next = { ...current }
+      if (confirmed) next[itemId] = new Date().toISOString()
+      else delete next[itemId]
+      return next
     })
+  }
 
   const user = useMemo<UserProfile | null>(() => {
     if (!profile) return null
@@ -221,7 +237,7 @@ export default function CheckoutSignAgreement() {
       // The unit the agreement names, so the request claims that same serial.
       const unitIds = Object.fromEntries(hardwareItems.map((item) => [item.id, units[item.id]?.id ?? null]))
       navigate('/home/checkout/availability', {
-        state: { ...checkoutState, signedAgreements, signedNames, signedDates, unitIds },
+        state: { ...checkoutState, signedAgreements, signedNames, signedDates, trainingConfirmedAt, unitIds },
       })
     } catch (submitError) {
       // eslint-disable-next-line no-console
@@ -279,7 +295,7 @@ export default function CheckoutSignAgreement() {
               <div className={styles.tabRow}>
                 {hardwareItems.map((item) => {
                   const isActive = item.id === activeItem.id
-                  const isSigned = Boolean(signatures[item.id]?.name.trim() && signatures[item.id]?.date)
+                  const isSigned = isItemComplete(item)
                   const tabClassName = [
                     styles.tab,
                     isSigned ? styles.tabComplete : styles.tabIncomplete,
@@ -321,6 +337,27 @@ export default function CheckoutSignAgreement() {
               onSignatureNameChange={(value) => updateSignature(activeItem.id, { name: value })}
               onSignatureDateChange={(value) => updateSignature(activeItem.id, { date: value })}
             />
+
+            {activeItem.documentation_url && (
+              <div className={styles.training}>
+                <a
+                  className={styles.trainingLink}
+                  href={activeItem.documentation_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open the training material for {activeItem.name}
+                </a>
+                <label className={styles.trainingCheck}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(trainingConfirmedAt[activeItem.id])}
+                    onChange={(event) => setTrainingConfirmed(activeItem.id, event.target.checked)}
+                  />
+                  <span>I have read the training material for {activeItem.name}</span>
+                </label>
+              </div>
+            )}
 
             {consumableItems.length > 0 && (
               <p className={styles.consumableNote}>

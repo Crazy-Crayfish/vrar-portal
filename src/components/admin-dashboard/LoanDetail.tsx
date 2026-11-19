@@ -368,6 +368,18 @@ export default function LoanDetail() {
               </button>
 
               <DetailRow label="Requested" value={formatDate(detail.requestedAt)} />
+              {/* Hardware only: it's the hardware that has an agreement and,
+                  with it, training material to confirm. */}
+              {detail.signedAgreementPath && (
+                <DetailRow
+                  label="Training"
+                  value={
+                    detail.trainingConfirmedAt
+                      ? `Confirmed ${formatDate(detail.trainingConfirmedAt)}`
+                      : 'Not recorded'
+                  }
+                />
+              )}
               {detail.returnDate && <DetailRow label="Return date" value={formatCalendarDate(detail.returnDate)} />}
               {detail.reviewedAt && <DetailRow label="Checked out" value={formatDate(detail.reviewedAt)} />}
               {detail.reviewerName && <DetailRow label="Checked out by" value={detail.reviewerName} />}

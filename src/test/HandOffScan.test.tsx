@@ -54,6 +54,7 @@ const loan = {
   signedAgreementPath: 'bob/req-1/eq-1.pdf',
   signatureName: 'Bob Reyes',
   signatureDate: '2026-09-17',
+  trainingConfirmedAt: null,
   reviewedAt: null,
   reviewNote: null,
   returnRequestedAt: null,

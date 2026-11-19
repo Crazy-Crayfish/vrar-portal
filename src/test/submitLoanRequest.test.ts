@@ -106,3 +106,22 @@ describe('submitLoanRequest — one unit, one borrower', () => {
     await expect(submitLoanRequest(input('unit-1'))).rejects.toMatchObject({ message: 'permission denied' })
   })
 })
+
+describe('submitLoanRequest — training confirmation', () => {
+  it('stores when the borrower confirmed the training material', async () => {
+    const request = input('unit-2')
+    request.items[0].trainingConfirmedAt = '2026-11-18T17:00:00.000Z'
+
+    await submitLoanRequest(request)
+
+    expect(insertedItems).toHaveBeenCalledWith([
+      expect.objectContaining({ training_confirmed_at: '2026-11-18T17:00:00.000Z' }),
+    ])
+  })
+
+  it('stores null when there was nothing to confirm', async () => {
+    await submitLoanRequest(input('unit-2'))
+
+    expect(insertedItems).toHaveBeenCalledWith([expect.objectContaining({ training_confirmed_at: null })])
+  })
+})

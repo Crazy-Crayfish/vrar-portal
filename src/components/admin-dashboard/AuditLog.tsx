@@ -109,7 +109,7 @@ const FIELD_LABEL: Record<string, string> = {
   category: 'Category',
   replacement_value: 'Replacement value',
   quantity_total: 'Quantity',
-  documentation_url: 'Documentation link',
+  documentation_url: 'Training link',
   image_url: 'Product photo',
   status: 'Status',
   review_note: 'Review note',
